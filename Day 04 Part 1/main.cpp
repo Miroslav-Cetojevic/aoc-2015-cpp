@@ -23,14 +23,10 @@ int main() {
 	auto md5 = Poco::MD5Engine{};
 	auto out = Poco::DigestOutputStream{md5};
 
-	using DigestEngine = Poco::DigestEngine;
-
 	auto range = Range<std::uint64_t>{0, UINT64_MAX};
 	auto result = std::find_if(range.begin, range.end, [&key, &prefix, &md5, &out] (auto& i) {
-		out << key + std::to_string(i);
-		out.flush();
-		auto& digest = md5.digest();
-		return (DigestEngine::digestToHex(digest).substr(0, prefix.size()) == prefix);
+		(out << key + std::to_string(i)).flush();
+		return (Poco::DigestEngine::digestToHex(md5.digest()).compare(0, prefix.size(), prefix) == 0);
 	});
 
 	std::cout << *result << std::endl;
