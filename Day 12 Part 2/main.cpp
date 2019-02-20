@@ -13,21 +13,25 @@ auto has_red(const O& object, const S& blacklisted) {
 	});
 }
 
-template<typename J, typename S, typename N>
-auto json_foreach(const J& json, const S& blacklisted, N& sum) -> void {
+template<typename J, typename S>
+auto accumulate(const J& json, const S& blacklisted) -> std::int64_t {
+	auto sum = std::int64_t{};
+
 	if(json.IsObject()) {
 		if(!has_red(json.GetObject(), blacklisted)) {
 			for(const auto& element : json.GetObject()) {
-				json_foreach(element.value, blacklisted, sum);
+				sum += accumulate(element.value, blacklisted);
 			}
 		}
 	} else if(json.IsArray()) {
 		for(const auto& element : json.GetArray()) {
-			json_foreach(element, blacklisted, sum);
+			sum += accumulate(element, blacklisted);
 		}
-	} else if(json.IsInt64()) {
+	} else 	if(json.IsInt64()) {
 		sum += json.GetInt64();
 	}
+
+	return sum;
 }
 
 int main() {
@@ -47,11 +51,9 @@ int main() {
 		auto json = rapidjson::Document{};
 		json.ParseStream(stream);
 
-		auto sum = std::int64_t{};
 		auto blacklisted = std::string{"red"};
-		json_foreach(json, blacklisted , sum);
 
-		std::cout << sum << std::endl;
+		std::cout << accumulate(json, blacklisted) << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
