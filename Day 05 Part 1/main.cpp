@@ -34,9 +34,9 @@ auto has_double_letters_and_triple_vowels(const S& evaluable) {
 	auto has_triple_vowels = false;
 	auto has_double_letters = false;
 
-	for(auto i = std::uint64_t{1}, prev = std::uint64_t{};
+	for(auto prev = std::uint64_t{}, i = (prev + 1);
 		i < evaluable.length() && !(has_triple_vowels && has_double_letters);
-		++i, ++prev) {
+		++prev, ++i) {
 
 		count_vowels += find_vowel(evaluable, i);
 		has_triple_vowels = (count_vowels >= 3);
