@@ -62,7 +62,7 @@ template<typename P>
 constexpr auto has_three_straight(const P& pwd) {
 	auto range = Range<std::uint64_t>{2, pwd.size()};
 	return std::any_of(range.begin, range.end, [&pwd] (auto i) {
-		return (pwd[i]-pwd[i-1] == 1 && pwd[i-1]-pwd[i-2] == 1);
+		return ((pwd[i]-1) == pwd[i-1]) && ((pwd[i]-2) == pwd[i-2]);
 	});
 }
 
