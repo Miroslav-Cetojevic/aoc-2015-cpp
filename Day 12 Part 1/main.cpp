@@ -4,19 +4,23 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-template<typename T, typename N>
-void json_foreach(const T& value, N& sum) {
+template<typename T>
+auto accumulate(const T& value) -> std::int64_t {
+	auto sum = std::int64_t{};
+
 	if(value.IsObject()) {
 		for(const auto& element : value.GetObject()) {
-			json_foreach(element.value, sum);
+			sum += accumulate(element.value);
 		}
 	} else if(value.IsArray()) {
 		for(const auto& element : value.GetArray()) {
-			json_foreach(element, sum);
+			sum += accumulate(element);
 		}
 	} else if(value.IsInt64()) {
 		sum += value.GetInt64();
 	}
+
+	return sum;
 }
 
 int main() {
@@ -36,10 +40,7 @@ int main() {
 		auto json = rapidjson::Document{};
 		json.ParseStream(stream);
 
-		auto sum = std::int64_t{};
-		json_foreach(json, sum);
-
-		std::cout << sum << std::endl;
+		std::cout << accumulate(json) << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
