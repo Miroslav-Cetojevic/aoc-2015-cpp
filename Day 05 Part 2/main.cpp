@@ -27,7 +27,7 @@ auto has_double_letter_pairs(const S& evaluable) {
 	auto range = Range{diff, evaluable.size()};
 
 	auto result = std::any_of(range.begin, range.end, [&evaluable] (auto i) {
-		return (evaluable.find(evaluable.substr(i - diff, 2), i + 1) != evaluable.npos);
+		return (evaluable.find(evaluable.substr(i - diff, 2), (i + 1)) != evaluable.npos);
 	});
 
 	return result;
