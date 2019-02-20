@@ -14,7 +14,7 @@ auto has_bad_substring(const S& evaluable) {
 	};
 
 	auto result = std::any_of(bad_strings.begin(), bad_strings.end(), [&evaluable] (const auto& bad_string) {
-		return (evaluable.find(bad_string) != S::npos);
+		return (evaluable.find(bad_string) != evaluable.npos);
 	});
 
 	return result;
