@@ -18,10 +18,7 @@ struct Range {
 };
 
 using Person = std::size_t;
-struct SeatingPair {
-	Person left;
-	Person right;
-};
+struct SeatingPair { Person left, right; };
 
 auto operator==(const SeatingPair& lhs, const SeatingPair& rhs) {
 	return ((lhs.left == rhs.left) && (lhs.right == rhs.right))
