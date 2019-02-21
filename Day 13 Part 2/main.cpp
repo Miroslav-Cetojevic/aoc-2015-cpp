@@ -24,12 +24,13 @@ auto operator==(const SeatingPair& lhs, const SeatingPair& rhs) {
 		   || ((lhs.left == rhs.right) && (lhs.right == rhs.left));
 }
 
-struct SeatingPairString {
-	std::string person1, score, person2;
+struct SeatingPairEntry {
+	std::string person1, person2;
+	std::size_t score;
 };
 
-auto& operator>>(std::istream& in, SeatingPairString& sps) {
-	return in >> sps.person1 >> sps.score >> sps.person2;
+auto& operator>>(std::istream& in, SeatingPairEntry& entry) {
+	return in >> entry.person1 >> entry.score >> entry.person2;
 }
 
 template<typename T>
@@ -65,13 +66,13 @@ int main() {
 		auto me = get_hash(std::string{"Me"});
 		family.insert(me);
 
-		auto line = SeatingPairString{};
+		auto line = SeatingPairEntry{};
 		while(file >> line) {
 
 			auto person1 = get_hash(line.person1);
 			auto person2 = get_hash(line.person2);
 
-			happymeter[{person1, person2}] += std::stoi(line.score);
+			happymeter[{person1, person2}] += line.score;
 			happymeter[{me, person1}] = happymeter[{me, person2}] = 0;
 
 			family.insert(person1);
