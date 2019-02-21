@@ -20,13 +20,13 @@ struct Range {
 int main() {
 	auto key = std::string{"ckczppom"};
 	auto prefix = std::string{"000000"};
-	auto old_result = std::uint64_t{117946};
+	auto old_result = 117946UL;
 
 	auto md5 = Poco::MD5Engine{};
 	auto out = Poco::DigestOutputStream{md5};
 
-	auto range = Range{old_result + 1, UINT64_MAX};
-	auto result = std::find_if(range.begin, range.end, [&key, &prefix, &md5, &out] (auto& i) {
+	auto range = Range{(old_result + 1), std::numeric_limits<std::size_t>::max()};
+	auto result = std::find_if(range.begin, range.end, [&] (auto i) {
 		(out << key + std::to_string(i)).flush();
 		return (Poco::DigestEngine::digestToHex(md5.digest()).compare(0, prefix.size(), prefix) == 0);
 	});
