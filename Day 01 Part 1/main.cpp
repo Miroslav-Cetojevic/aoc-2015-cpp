@@ -10,10 +10,10 @@ int main() {
 
 	if(file.is_open()) {
 		auto direction = char{};
-		auto floor = std::int64_t{};
+		auto floor = std::size_t{};
 
 		while(file >> direction) {
-			(direction == '(') ? ++floor : --floor;
+			floor += ((direction == '(') ? 1 : -1);
 		}
 
 		std::cout << floor << std::endl;
