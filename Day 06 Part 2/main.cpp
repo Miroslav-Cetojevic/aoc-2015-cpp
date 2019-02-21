@@ -37,20 +37,20 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		constexpr auto gridlen = std::uint64_t{1000};
+		constexpr auto gridlen = 1000UL;
 		constexpr auto numlights = gridlen*gridlen;
 		using Grid = std::array<std::uint64_t, numlights>;
 		auto grid = Grid{};
 
-		using cmd = void (*)(Grid&, std::uint64_t);
+		using cmd = void (*)(Grid&, std::size_t);
 		auto cmd_map = std::unordered_map<std::string, cmd>{
-			{std::string{"on"}, on},
-			{std::string{"off"}, off},
-			{std::string{"toggle"}, toggle}
+			{"on", on},
+			{"off", off},
+			{"toggle", toggle}
 		};
 
 		auto instruction = std::string{};
-		auto endpoints = EndPoints<std::uint64_t>{};
+		auto endpoints = EndPoints<std::size_t>{};
 
 		while(file >> instruction >> endpoints) {
 
@@ -63,7 +63,7 @@ int main() {
 			}
 		}
 
-		auto sum = std::accumulate(grid.begin(), grid.end(), std::uint64_t{});
+		auto sum = std::accumulate(grid.begin(), grid.end(), 0UL);
 
 		std::cout << sum << std::endl;
 	} else {
