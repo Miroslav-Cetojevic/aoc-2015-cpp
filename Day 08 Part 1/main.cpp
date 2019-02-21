@@ -16,7 +16,7 @@ int main() {
 		file.seekg(0, std::ios::beg);
 		file.read(contents.data(), contents.size());
 
-		auto escsum = std::uint64_t{};
+		auto escsum = std::size_t{};
 		auto escmemsum = escsum;
 		auto nlsum = escsum;
 
