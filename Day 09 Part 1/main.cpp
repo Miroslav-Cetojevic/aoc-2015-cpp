@@ -10,21 +10,22 @@
 
 #include <boost/iterator/counting_iterator.hpp>
 
-using Vertex = std::string;
-using VertexID = std::size_t;
+using Location = std::string;
+using LocationID = std::size_t;
 using Distance = std::size_t;
 
-struct Edge {
-	VertexID v, w;
-	Distance d;
+struct Route {
+	LocationID location1, location2;
+	Distance distance;
 };
 
-struct EdgeString {
-	std::string v, w, d;
+struct RouteEntry {
+	std::string location1, location2;
+	std::size_t distance;
 };
 
-auto& operator>>(std::istream& in, EdgeString& es) {
-	return in >> es.v >> es.w >> es.d;
+auto& operator>>(std::istream& in, RouteEntry& re) {
+	return in >> re.location1 >> re.location2 >> re.distance;
 }
 
 template<typename T>
@@ -46,42 +47,44 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto vertex_map = std::unordered_map<Vertex, VertexID>{};
-		auto vertices = std::set<VertexID>{};
+		auto geo_map = std::unordered_map<Location, LocationID>{};
+		auto locations = std::set<LocationID>{};
 
-		auto add_vertex = [&vertex_map, &vertices](const auto& vertex) {
-			static auto vertex_id = VertexID{};
-			auto pos = vertex_map.try_emplace(vertex, 0);
+		auto add_location = [&geo_map, &locations](const auto& location) {
+			static auto vertex_id = LocationID{};
+			auto pos = geo_map.try_emplace(location, 0);
 			if(pos.second) {
 				pos.first->second = vertex_id++;
-				vertices.insert(pos.first->second);
+				locations.insert(pos.first->second);
 			}
 			return pos.first->second;
 		};
 
-		auto edges = std::vector<Edge>{};
-		auto edge_str = EdgeString{};
-		while(file >> edge_str) {
-			edges.push_back(Edge{add_vertex(edge_str.v),
-								 add_vertex(edge_str.w),
-								 std::stoul(edge_str.d)});
+		auto routes = std::vector<Route>{};
+		auto entry = RouteEntry{};
+		while(file >> entry) {
+			routes.emplace_back(Route{add_location(entry.location1),
+									  add_location(entry.location2),
+									  entry.distance});
 		}
 
 		/*
-		 * find shortest path through all vertices
+		 * find shortest path through all locations
 		 */
-		auto size = vertices.size();
-		auto matrix = std::vector<std::vector<Distance>>{size};
-		for(auto& row : matrix) {
-			row = std::vector<Distance>(size);
+		auto size = locations.size();
+		auto chart = std::vector<std::vector<Distance>>{size};
+		for(auto& entry : chart) {
+			entry = std::vector<Distance>(size);
 		}
 
-		// populate matrix with edges
-		for(const auto& edge : edges) {
-			matrix[edge.v][edge.w] = matrix[edge.w][edge.v] = edge.d;
+		// populate chart with routes
+		for(const auto& route : routes) {
+			chart[route.location1][route.location2]
+			= chart[route.location2][route.location1]
+			= route.distance;
 		}
 
-		auto permutable = std::vector<VertexID>{vertices.begin(), vertices.end()};
+		auto permutable = std::vector<LocationID>{locations.begin(), locations.end()};
 		auto min_distance = Distance{std::numeric_limits<Distance>::max()};
 
 		auto f = factorial(size);
@@ -93,7 +96,7 @@ int main() {
 												   std::next(permutable.begin()),
 												   Distance{},
 												   std::plus{},
-												   [&matrix] (auto a, auto b) { return matrix[a][b]; });
+												   [&chart] (auto a, auto b) { return chart[a][b]; });
 
 			min_distance = std::min(min_distance, tmp_distance);
 
