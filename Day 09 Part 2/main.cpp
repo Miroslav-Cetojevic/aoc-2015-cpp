@@ -1,25 +1,26 @@
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <numeric>
 #include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <boost/iterator/counting_iterator.hpp>
 
 using Vertex = std::string;
 using VertexID = std::uint64_t;
 using Distance = std::uint64_t;
 
 struct Edge {
-	VertexID v;
-	VertexID w;
+	VertexID v, w;
 	Distance d;
 };
 
 struct EdgeString {
-	std::string v;
-	std::string w;
-	std::string d;
+	std::string v, w, d;
 };
 
 auto& operator>>(std::istream& in, EdgeString& es) {
@@ -27,7 +28,16 @@ auto& operator>>(std::istream& in, EdgeString& es) {
 }
 
 template<typename T>
-T factorial(T n) { return (n <= 1) ? 1 : factorial(n-1) * n; }
+struct Range {
+	boost::counting_iterator<T, boost::use_default, T> begin, end;
+	Range(T b, T e): begin(b), end(e) {}
+};
+
+template<typename T>
+auto factorial(T n) {
+	auto range = Range<T>{2, (n + 1)};
+	return std::accumulate(range.begin, range.end, T{1}, std::multiplies{});
+}
 
 int main() {
 	std::ios_base::sync_with_stdio(false);
@@ -75,17 +85,19 @@ int main() {
 		auto max_distance = Distance{};
 
 		auto f = factorial(size);
-		auto limit = (f/size) * (size-1);
+		auto limit = (f / size) * (size - 1);
 
-		auto i = std::uint64_t{};
 		do {
-			auto tmp_distance = Distance{};
-			for(auto prev = permutable.begin(), curr = std::next(prev); curr != permutable.end(); ++prev, ++curr) {
-				tmp_distance += matrix[*prev][*curr];
-			}
+			auto tmp_distance = std::inner_product(permutable.begin(),
+												   std::prev(permutable.end()),
+												   std::next(permutable.begin()),
+												   Distance{},
+												   std::plus{},
+												   [&matrix] (auto a, auto b) { return matrix[a][b]; });
+
 			max_distance = std::max(max_distance, tmp_distance);
 
-		} while(i++ < limit && std::next_permutation(permutable.begin(), permutable.end()));
+		} while((limit--) > 0 && std::next_permutation(permutable.begin(), permutable.end()));
 
 		std::cout << max_distance << std::endl;
 	} else {
