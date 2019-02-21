@@ -24,12 +24,13 @@ auto operator==(const SeatingPair& lhs, const SeatingPair& rhs) {
 		   || ((lhs.left == rhs.right) && (lhs.right == rhs.left));
 }
 
-struct SeatingPairString {
-	std::string person1, score, person2;
+struct SeatingPairEntry {
+	std::string person1, person2;
+	std::size_t score;
 };
 
-auto& operator>>(std::istream& in, SeatingPairString& sps) {
-	return in >> sps.person1 >> sps.score >> sps.person2;
+auto& operator>>(std::istream& in, SeatingPairEntry& entry) {
+	return in >> entry.person1 >> entry.score >> entry.person2;
 }
 
 template<typename T>
@@ -62,14 +63,14 @@ int main() {
 		using PairHappiness = std::ptrdiff_t;
 		auto happymeter = ska::flat_hash_map<SeatingPair, PairHappiness>{};
 
-		auto line = SeatingPairString{};
+		auto line = SeatingPairEntry{};
 
 		while(file >> line) {
 
 			auto hash1 = get_hash(line.person1);
 			auto hash2 = get_hash(line.person2);
 
-			happymeter[{hash1, hash2}] += std::stoi(line.score);
+			happymeter[{hash1, hash2}] += line.score;
 
 			family.insert(hash1);
 			family.insert(hash1);
