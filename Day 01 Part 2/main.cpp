@@ -10,15 +10,16 @@ int main() {
 
 	if(file.is_open()) {
 		auto direction = char{};
-		auto floor = std::int64_t{};
+		auto floor = 0L;
+		auto pos = 0UL;
 
-		while(file >> direction) {
-			(direction == '(') ? ++floor : --floor;
+		for(auto& i = pos; (floor >= 0) && (file >> direction); ++i) {
+			floor += ((direction == '(') ? 1 : -1);
 		}
 
-		std::cout << floor << std::endl;
+		std::cout << pos << std::endl;
 	} else {
-		std::cerr << "Error! Could not open \"" << filename << "\"" << std::endl;
+		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
 
 	return 0;
