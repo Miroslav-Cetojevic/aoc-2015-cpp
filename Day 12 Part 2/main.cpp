@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -8,14 +9,14 @@
 template<typename O, typename S>
 auto has_red(const O& object, const S& blacklisted) {
 	return std::any_of(object.begin(), object.end(), [&blacklisted] (auto& element) {
-		auto value = ((element.value.IsString()) ? S{element.value.GetString()} : S{});
+		auto value = ((element.value.IsString()) ? element.value.GetString() : S{});
 		return (value == blacklisted);
 	});
 }
 
 template<typename J, typename S>
-auto accumulate(const J& json, const S& blacklisted) -> std::int64_t {
-	auto sum = std::int64_t{};
+auto accumulate(const J& json, const S& blacklisted) -> std::ptrdiff_t {
+	auto sum = 0L;
 
 	if(json.IsObject()) {
 		if(!has_red(json.GetObject(), blacklisted)) {
@@ -35,8 +36,8 @@ auto accumulate(const J& json, const S& blacklisted) -> std::int64_t {
 }
 
 int main() {
-	auto filename = std::string{"json.txt"};
-	auto file = std::fopen(filename.data(), "r");
+	auto filename = "json.txt";
+	auto file = std::fopen(filename, "r");
 
 	if(file) {
 		std::fseek(file, 0, SEEK_END);
