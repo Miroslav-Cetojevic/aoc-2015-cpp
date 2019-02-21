@@ -11,8 +11,8 @@
 #include <boost/iterator/counting_iterator.hpp>
 
 using Vertex = std::string;
-using VertexID = std::uint64_t;
-using Distance = std::uint64_t;
+using VertexID = std::size_t;
+using Distance = std::size_t;
 
 struct Edge {
 	VertexID v, w;
@@ -71,7 +71,7 @@ int main() {
 		 * find longest path through all vertices
 		 */
 		auto size = vertices.size();
-		auto matrix = std::vector<std::vector<Distance>>(size);
+		auto matrix = std::vector<std::vector<Distance>>{size};
 		for(auto& row : matrix) {
 			row = std::vector<Distance>(size);
 		}
