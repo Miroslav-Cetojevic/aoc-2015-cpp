@@ -61,7 +61,7 @@ int main() {
 		/*
 		 * map each line to a set of operations on a single wire
 		 */
-		auto max_tokens = std::uint64_t{5};
+		const auto max_tokens = 5UL;
 		auto tokens = std::vector<std::string>{max_tokens};
 
 		auto line = std::string{};
