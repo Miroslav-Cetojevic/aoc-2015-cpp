@@ -3,6 +3,7 @@
  */
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include <boost/iterator/counting_iterator.hpp>
@@ -14,6 +15,7 @@
 template<typename T>
 struct Range {
 	boost::counting_iterator<T, boost::use_default, T> begin, end;
+	Range(T b, T e): begin(b), end(e) {}
 };
 
 int main() {
@@ -23,8 +25,8 @@ int main() {
 	auto md5 = Poco::MD5Engine{};
 	auto out = Poco::DigestOutputStream{md5};
 
-	auto range = Range<std::uint64_t>{0, UINT64_MAX};
-	auto result = std::find_if(range.begin, range.end, [&key, &prefix, &md5, &out] (auto& i) {
+	auto range = Range{0UL, std::numeric_limits<std::size_t>::max()};
+	auto result = std::find_if(range.begin, range.end, [&] (auto i) {
 		(out << key + std::to_string(i)).flush();
 		return (Poco::DigestEngine::digestToHex(md5.digest()).compare(0, prefix.size(), prefix) == 0);
 	});
