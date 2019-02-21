@@ -10,7 +10,7 @@ int main() {
 
 	if(file.is_open()) {
 		auto direction = char{};
-		auto floor = 0UL;
+		auto floor = 0L;
 
 		while(file >> direction) {
 			floor += ((direction == '(') ? 1 : -1);
