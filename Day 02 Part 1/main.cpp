@@ -2,9 +2,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
 
-#include <boost/algorithm/string.hpp>
+struct Dimensions { std::size_t length, width, height; };
+
+auto& operator>>(std::istream& in, Dimensions& D) {
+	return in >> D.length >> D.width >> D.height;
+}
 
 int main() {
 	std::ios::sync_with_stdio(false);
@@ -13,23 +16,19 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto dimensions = std::vector<std::string>{3};
+		auto D = Dimensions{};
+
 		auto total_paper = 0UL;
 
-		auto line = std::string{};
-		while(std::getline(file, line)) {
-			boost::split(dimensions, line, [] (char c) { return (c == 'x'); });
+		while(file >> D) {
 
-			auto length = std::stoul(dimensions[0]);
-			auto width = std::stoul(dimensions[1]);
-			auto height = std::stoul(dimensions[2]);
-
-			auto A = length * width;
-			auto B = width * height;
-			auto C = length * height;
+			auto A = D.length * D.width;
+			auto B = D.width * D.height;
+			auto C = D.length * D.height;
 
 			total_paper += (2 * (A + B + C)) + std::min(std::min(A, B), C);
 		}
+
 		std::cout << total_paper << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
