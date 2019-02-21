@@ -13,7 +13,7 @@ int main() {
 
 	if(file.is_open()) {
 		auto dimensions = std::vector<std::string>{3};
-		auto total_ribbon = std::uint64_t{};
+		auto total_ribbon = 0UL;
 
 		auto line = std::string{};
 		while(std::getline(file, line)) {
