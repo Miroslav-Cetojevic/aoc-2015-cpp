@@ -11,7 +11,7 @@ struct Range {
 	Range(T b, T e): begin(b), end(e) {}
 };
 
-template<typename S, std::uint64_t diff = 2>
+template<typename S, std::size_t diff = 2>
 bool has_letter_sandwich(const S& evaluable) {
 	auto range = Range{diff, evaluable.size()};
 
@@ -22,7 +22,7 @@ bool has_letter_sandwich(const S& evaluable) {
 	return result;
 }
 
-template<typename S, std::uint64_t diff = 1>
+template<typename S, std::size_t diff = 1>
 auto has_double_letter_pairs(const S& evaluable) {
 	auto range = Range{diff, evaluable.size()};
 
@@ -41,7 +41,7 @@ int main() {
 
 	if(file.is_open()) {
 		auto line = std::string{};
-		auto count = std::uint64_t{};
+		auto count = 0UL;
 
 		while(std::getline(file, line)) {
 			if(has_double_letter_pairs(line) && has_letter_sandwich(line)) {
