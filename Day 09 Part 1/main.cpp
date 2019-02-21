@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <numeric>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -75,17 +77,19 @@ int main() {
 		auto min_distance = Distance{UINT64_MAX};
 
 		auto f = factorial(size);
-		auto limit = (f/size) * (size-1);
+		auto limit = (f / size) * (size - 1);
 
-		auto i = std::uint64_t{};
 		do {
-			auto tmp_distance = Distance{};
-			for(auto prev = permutable.begin(), curr = std::next(prev); curr != permutable.end(); ++prev, ++curr) {
-				tmp_distance += matrix[*prev][*curr];
-			}
+			auto tmp_distance = std::inner_product(permutable.begin(),
+												   std::prev(permutable.end()),
+												   std::next(permutable.begin()),
+												   Distance{},
+												   std::plus{},
+												   [&matrix] (auto a, auto b) { return matrix[a][b]; });
+
 			min_distance = std::min(min_distance, tmp_distance);
 
-		} while(i++ < limit && std::next_permutation(permutable.begin(), permutable.end()));
+		} while((limit--) > 0 && std::next_permutation(permutable.begin(), permutable.end()));
 
 		std::cout << min_distance << std::endl;
 	} else {
