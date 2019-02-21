@@ -5,8 +5,8 @@
 #include <rapidjson/filereadstream.h>
 
 template<typename T>
-auto accumulate(const T& value) -> std::int64_t {
-	auto sum = std::int64_t{};
+auto accumulate(const T& value) -> std::ptrdiff_t {
+	auto sum = 0L;
 
 	if(value.IsObject()) {
 		for(const auto& element : value.GetObject()) {
@@ -24,8 +24,8 @@ auto accumulate(const T& value) -> std::int64_t {
 }
 
 int main() {
-	auto filename = std::string{"json.txt"};
-	auto file = std::fopen(filename.data(), "r");
+	auto filename = "json.txt";
+	auto file = std::fopen(filename, "r");
 
 	if(file) {
 		std::fseek(file, 0, SEEK_END);
