@@ -14,20 +14,20 @@ struct Range {
 int main() {
 	auto sequence = std::string{"1321131112"};
 
-	auto range = Range<std::uint64_t>{0, 50};
+	auto range = Range<std::size_t>{0, 50};
 	std::for_each(range.begin, range.end, [&sequence] (auto) {
 
 		auto tmp = std::string{};
-		auto n = std::uint64_t{};
+		auto n = 0UL;
 
-		for(auto j = std::uint64_t{}, pos = (j + 1); j < sequence.size(); j = pos) {
-			pos = sequence.find_first_not_of(sequence[j], pos);
+		for(auto i = 0UL, pos = (i + 1); i < sequence.size(); i = pos) {
+			pos = sequence.find_first_not_of(sequence[i], pos);
 
-			if(pos != sequence.npos) { n = pos-j; }
-			else { n = sequence.size()-j; }
+			if(pos != sequence.npos) { n = (pos - i); }
+			else { n = (sequence.size() - i); }
 
 			tmp += ('0' + n);
-			tmp += sequence[j];
+			tmp += sequence[i];
 		}
 
 		sequence = tmp;
