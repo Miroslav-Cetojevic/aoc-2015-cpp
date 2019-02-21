@@ -3,7 +3,11 @@
 #include <string>
 #include <vector>
 
-#include <boost/algorithm/string.hpp>
+struct Dimensions { std::size_t length, width, height; };
+
+auto& operator>>(std::istream& in, Dimensions& D) {
+	return in >> D.length >> D.width >> D.height;
+}
 
 int main() {
 	std::ios::sync_with_stdio(false);
@@ -12,16 +16,15 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto dimensions = std::vector<std::string>{3};
+		auto D = Dimensions{};
+
 		auto total_ribbon = 0UL;
 
-		auto line = std::string{};
-		while(std::getline(file, line)) {
-			boost::split(dimensions, line, [] (char c) { return (c == 'x'); });
+		while(file >> D) {
 
-			auto length = std::stoul(dimensions[0]);
-			auto width = std::stoul(dimensions[1]);
-			auto height = std::stoul(dimensions[2]);
+			auto length = D.length;
+			auto width = D.width;
+			auto height = D.height;
 
 			// sorts 3 elements
 			if(width < length) { std::swap(length, width); }
@@ -34,7 +37,7 @@ int main() {
 			total_ribbon += 2 * (length + width) + (length * width * height);
 		}
 
-		std::cout << "Total ribbon: " << total_ribbon << std::endl;
+		std::cout << total_ribbon << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
