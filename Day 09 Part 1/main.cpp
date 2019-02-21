@@ -84,23 +84,23 @@ int main() {
 			= route.distance;
 		}
 
-		auto permutable = std::vector<LocationID>{locations.begin(), locations.end()};
+		auto itinerary = std::vector<LocationID>{locations.begin(), locations.end()};
 		auto min_distance = Distance{std::numeric_limits<Distance>::max()};
 
 		auto f = factorial(size);
 		auto limit = (f / size) * (size - 1);
 
 		do {
-			auto tmp_distance = std::inner_product(permutable.begin(),
-												   std::prev(permutable.end()),
-												   std::next(permutable.begin()),
+			auto tmp_distance = std::inner_product(itinerary.begin(),
+												   std::prev(itinerary.end()),
+												   std::next(itinerary.begin()),
 												   Distance{},
 												   std::plus{},
 												   [&chart] (auto a, auto b) { return chart[a][b]; });
 
 			min_distance = std::min(min_distance, tmp_distance);
 
-		} while((limit--) > 0 && std::next_permutation(permutable.begin(), permutable.end()));
+		} while((limit--) > 0 && std::next_permutation(itinerary.begin(), itinerary.end()));
 
 		std::cout << min_distance << std::endl;
 	} else {
