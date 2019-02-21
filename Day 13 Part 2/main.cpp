@@ -66,13 +66,13 @@ int main() {
 		auto me = get_hash(std::string{"Me"});
 		family.insert(me);
 
-		auto line = SeatingPairEntry{};
-		while(file >> line) {
+		auto entry = SeatingPairEntry{};
+		while(file >> entry) {
 
-			auto person1 = get_hash(line.person1);
-			auto person2 = get_hash(line.person2);
+			auto person1 = get_hash(entry.person1);
+			auto person2 = get_hash(entry.person2);
 
-			happymeter[{person1, person2}] += line.score;
+			happymeter[{person1, person2}] += entry.score;
 			happymeter[{me, person1}] = happymeter[{me, person2}] = 0;
 
 			family.insert(person1);
