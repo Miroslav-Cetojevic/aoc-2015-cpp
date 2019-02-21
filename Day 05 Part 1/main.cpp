@@ -30,21 +30,26 @@ auto find_vowel(const S& evaluable, N pos) {
 template<typename S>
 auto has_double_letters_and_triple_vowels(const S& evaluable) {
 
-	auto count_vowels = find_vowel(evaluable, 0);
+	auto count_vowels = find_vowel(evaluable, 0UL);
 	auto has_triple_vowels = false;
 	auto has_double_letters = false;
 
-	for(auto prev = std::uint64_t{}, i = (prev + 1);
-		i < evaluable.length() && !(has_triple_vowels && has_double_letters);
-		++prev, ++i) {
+	auto result = false;
 
-		count_vowels += find_vowel(evaluable, i);
+	for(auto i = 0UL, j = (i + 1);
+		j < evaluable.length() && !result;
+		++i, ++j) {
+
+		if(!has_double_letters) { has_double_letters = (evaluable[i] == evaluable[j]); }
+
+		count_vowels += find_vowel(evaluable, j);
 		has_triple_vowels = (count_vowels >= 3);
 
-		if(!has_double_letters) { has_double_letters = (evaluable[prev] == evaluable[i]); }
+
+		result = (has_double_letters && has_triple_vowels);
 	}
 
-	return (has_triple_vowels && has_double_letters);
+	return result;
 }
 
 int main() {
@@ -52,8 +57,9 @@ int main() {
 
 	auto filename = std::string{"strings.txt"};
 	auto file = std::fstream{filename};
+
 	if(file.is_open()) {
-		auto count = std::uint64_t{};
+		auto count = 0UL;
 
 		auto line = std::string{};
 		while(std::getline(file, line)) {
