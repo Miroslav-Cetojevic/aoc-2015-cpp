@@ -8,20 +8,19 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/iterator/counting_iterator.hpp>
+
 using Vertex = std::string;
 using VertexID = std::uint64_t;
 using Distance = std::uint64_t;
 
 struct Edge {
-	VertexID v;
-	VertexID w;
+	VertexID v, w;
 	Distance d;
 };
 
 struct EdgeString {
-	std::string v;
-	std::string w;
-	std::string d;
+	std::string v, w, d;
 };
 
 auto& operator>>(std::istream& in, EdgeString& es) {
@@ -29,7 +28,16 @@ auto& operator>>(std::istream& in, EdgeString& es) {
 }
 
 template<typename T>
-T factorial(T n) { return (n <= 1) ? 1 : factorial(n-1) * n; }
+struct Range {
+	boost::counting_iterator<T, boost::use_default, T> begin, end;
+	Range(T b, T e): begin(b), end(e) {}
+};
+
+template<typename T>
+auto factorial(T n) {
+	auto range = Range<T>{2, (n + 1)};
+	return std::accumulate(range.begin, range.end, T{1}, std::multiplies{});
+}
 
 int main() {
 	std::ios_base::sync_with_stdio(false);
