@@ -1,4 +1,3 @@
-#include <chrono>
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -58,11 +57,9 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto start = std::chrono::steady_clock::now();
-
 		auto family = ska::flat_hash_set<Person>{};
 
-		using PairHappiness = std::int64_t;
+		using PairHappiness = std::ptrdiff_t;
 		auto happymeter = ska::flat_hash_map<SeatingPair, PairHappiness>{};
 
 		auto line = SeatingPairString{};
@@ -81,7 +78,8 @@ int main() {
 		auto seating = std::vector<Person>{family.begin(), family.end()};
 
 		auto size = family.size();
-		auto limit = (factorial(size) / size) * (size - 1) - 1;
+		auto f = factorial(size);
+		auto limit = (f / size) * (size - 1) - 1;
 
 		auto max_happiness = PairHappiness{};
 
