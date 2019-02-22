@@ -38,7 +38,7 @@ int main() {
 		using Grid = std::array<std::size_t, numlights>;
 		auto grid = Grid{};
 
-		using cmd = void (*)(Grid&, std::size_t);
+		using cmd = void (*) (Grid&, std::size_t);
 		auto cmd_map = std::unordered_map<std::string, cmd>{
 			{"on", on},
 			{"off", off},
