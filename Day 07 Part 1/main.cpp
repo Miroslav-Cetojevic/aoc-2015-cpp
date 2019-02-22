@@ -1,10 +1,11 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include <boost/algorithm/string.hpp>
+
+#include "flat_hash_map.hpp"
 
 using Wire = std::string;
 using Signal = std::uint16_t;
@@ -42,7 +43,7 @@ int main() {
 
 	if(file.is_open()) {
 		auto signal = std::string{};
-		auto commands = std::unordered_map<std::string, Command>{
+		auto commands = ska::flat_hash_map<std::string, Command>{
 			{"AND", AND},
 			{"OR", OR},
 			{"LSHIFT", LSHIFT},
