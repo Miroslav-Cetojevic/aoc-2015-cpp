@@ -9,10 +9,10 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto direction = char{};
 		auto floor = 0L;
 		auto pos = 0UL;
 
+		char direction;
 		for(auto& i = pos; (floor >= 0) && (file >> direction); ++i) {
 			floor += ((direction == '(') ? 1 : -1);
 		}
