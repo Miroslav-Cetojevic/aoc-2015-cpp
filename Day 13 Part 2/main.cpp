@@ -66,7 +66,7 @@ int main() {
 		auto me = get_hash(std::string{"Me"});
 		family.insert(me);
 
-		auto entry = SeatingPairEntry{};
+		SeatingPairEntry entry;
 		while(file >> entry) {
 
 			auto person1 = get_hash(entry.person1);
