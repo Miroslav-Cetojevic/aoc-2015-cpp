@@ -48,10 +48,10 @@ int main() {
 		std::for_each(range.begin, range.end, [&reindeers] (auto i) {
 
 			for(auto& reindeer : reindeers) {
-				auto cycle = (reindeer.runtime + reindeer.resttime);
-				auto time_left = (i % cycle);
+				const auto cycle = (reindeer.runtime + reindeer.resttime);
+				const auto time_left = (i % cycle);
 
-				auto has_time_left = (time_left > 0 && time_left <= reindeer.runtime);
+				const auto has_time_left = (time_left > 0 && time_left <= reindeer.runtime);
 
 				if(has_time_left) {
 					reindeer.total_distance += reindeer.speed;
