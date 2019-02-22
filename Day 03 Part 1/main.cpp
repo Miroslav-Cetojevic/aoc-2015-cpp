@@ -35,7 +35,7 @@ int main() {
 		auto pos = Position<ssize_t>{};
 		++houses[pos]; // Santa starts at pos(0,0)
 
-		auto direction = char{};
+		char direction;
 		while(file >> direction) {
 			switch(direction) {
 				case '^': ++pos.y; break;
