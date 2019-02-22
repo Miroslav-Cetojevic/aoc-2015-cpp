@@ -10,9 +10,6 @@
 #include <string>
 #include <vector>
 
-#include <chrono>
-auto now = [] { return std::chrono::steady_clock::now(); };
-
 struct Ingredient {
 	std::size_t id, calories;
 	std::ptrdiff_t capacity, durability, flavor, texture;
@@ -93,7 +90,6 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto start = now();
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
@@ -108,9 +104,7 @@ int main() {
 		auto max_score = 0UL;
 
 		partition(baskets, baskets.size(), ingredients, ingredient_id, spoons_left, max_score);
-		auto finish = now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
-		std::cout << duration << std::endl;
+
 		std::cout << max_score << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
