@@ -31,7 +31,7 @@ int main() {
 			reindeers.emplace_back(entry);
 		}
 
-		auto max_distance = std::accumulate(reindeers.begin(), reindeers.end(), 0UL, [seconds] (auto sum, auto& reindeer) {
+		auto max_distance = std::accumulate(reindeers.begin(), reindeers.end(), 0UL, [seconds] (auto current_max, auto& reindeer) {
 			const auto distance = (reindeer.speed * reindeer.runtime);
 			const auto cycle = (reindeer.runtime + reindeer.resttime);
 			const auto cycles = (seconds / cycle);
@@ -41,7 +41,7 @@ int main() {
 
 			tmp_distance += (time_left >= reindeer.runtime) ? distance : (reindeer.speed * time_left);
 
-			return std::max(sum, tmp_distance);
+			return std::max(current_max, tmp_distance);
 		});
 
 		std::cout << max_distance << std::endl;
