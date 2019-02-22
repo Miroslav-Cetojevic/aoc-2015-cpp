@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+#include <chrono>
+auto now = [] { return std::chrono::steady_clock::now(); };
+
 struct Ingredient {
 	std::size_t id, calories;
 	std::ptrdiff_t capacity, durability, flavor, texture;
@@ -19,20 +22,21 @@ auto& operator>>(std::istream& in, Ingredient& ingredient) {
 	static auto id = 0UL;
 	ingredient.id = id++;
 
-	std::string name;
+	static std::string name;
 	return in >> name >> ingredient.capacity >> ingredient.durability
 			  >> ingredient.flavor >> ingredient.texture >> ingredient.calories;
 }
+
 
 // this function is based on the following SO answer:
 // https://stackoverflow.com/a/22989846/699211
 template<typename B, typename I, typename N>
 void partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N& max_score) {
-	if(spoons_left >= 1) {
+	if(spoons_left > 0) {
 
 		if((ingredient_id + 1) < n_baskets) {
 
-			auto min_spoons = (ingredient_id == 0) ? 1UL : baskets[ingredient_id-1];
+			auto min_spoons = ((ingredient_id == 0) ? 1UL : baskets[ingredient_id-1]);
 
 			auto max_spoons = (spoons_left / 2);
 
@@ -45,21 +49,35 @@ void partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoon
 			baskets[ingredient_id] = spoons_left;
 
 			auto tmp_baskets = baskets;
-			auto properties = std::array<std::ptrdiff_t, 4>{};
+			using Properties = std::array<std::ptrdiff_t, 4>;
+			auto properties = Properties{};
+
+			auto sum_properties = [] (auto acc, auto next) {
+				auto P = Properties{};
+				std::transform(acc.begin(), acc.end(), next.begin(), P.begin(), std::plus{});
+				return P;
+			};
+
+			auto multiply_properties = [] (auto num, auto ingredient) {
+				return Properties{num * ingredient.capacity,
+								  num * ingredient.durability,
+								  num * ingredient.flavor,
+								  num * ingredient.texture};
+			};
 
 			do {
-				for(auto i = 0UL; i < tmp_baskets.size(); ++i) {
-					properties[0] += tmp_baskets[i] * ingredients[i].capacity;
-					properties[1] += tmp_baskets[i] * ingredients[i].durability;
-					properties[2] += tmp_baskets[i] * ingredients[i].flavor;
-					properties[3] += tmp_baskets[i] * ingredients[i].texture;
-				}
+				properties = std::inner_product(tmp_baskets.begin(),
+												tmp_baskets.end(),
+												ingredients.begin(),
+												properties,
+												sum_properties,
+												multiply_properties);
 
-				auto result = std::accumulate(properties.begin(), properties.end(), 1UL, [] (auto product, auto value) {
+				auto tmp_score = std::accumulate(properties.begin(), properties.end(), 1UL, [] (auto product, auto value) {
 					return product *= ((value >= 0) ? value : 0);
 				});
 
-				max_score = std::max(max_score, result);
+				max_score = std::max(max_score, tmp_score);
 
 				std::fill(properties.begin(), properties.end(), 0);
 
@@ -75,7 +93,7 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-
+		auto start = now();
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
@@ -90,7 +108,9 @@ int main() {
 		auto max_score = 0UL;
 
 		partition(baskets, baskets.size(), ingredients, ingredient_id, spoons_left, max_score);
-
+		auto finish = now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
+		std::cout << duration << std::endl;
 		std::cout << max_score << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
