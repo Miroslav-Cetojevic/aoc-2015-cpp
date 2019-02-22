@@ -56,8 +56,8 @@ int main() {
 			{"toggle", toggle}
 		};
 
-		auto instruction = std::string{};
-		auto endpoints = EndPoints<std::size_t>{};
+		std::string instruction;
+		EndPoints<std::size_t> endpoints;
 
 		while(file >> instruction >> endpoints) {
 
