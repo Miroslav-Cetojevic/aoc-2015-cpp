@@ -61,7 +61,7 @@ int main() {
 	if(file.is_open()) {
 		auto count = 0UL;
 
-		auto line = std::string{};
+		std::string line;
 		while(std::getline(file, line)) {
 
 			if(!has_bad_substring(line)
