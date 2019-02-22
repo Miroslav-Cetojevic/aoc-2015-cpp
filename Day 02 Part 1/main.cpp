@@ -16,10 +16,9 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto D = Dimensions{};
-
 		auto total_paper = 0UL;
 
+		Dimensions D;
 		while(file >> D) {
 
 			auto A = D.length * D.width;
