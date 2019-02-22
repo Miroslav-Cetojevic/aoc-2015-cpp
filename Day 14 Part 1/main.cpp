@@ -21,9 +21,7 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-
 		auto reindeers = std::vector<Reindeer>{};
-		auto name = std::string{};
 
 		std::size_t seconds;
 		file >> seconds;
