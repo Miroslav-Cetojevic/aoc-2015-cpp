@@ -51,9 +51,7 @@ int main() {
 		++houses[santapos];
 		++houses[robopos];
 
-		auto santadir = char{};
-		auto robodir = santadir;
-
+		char santadir, robodir;
 		while(file >> santadir >> robodir) {
 			move(santapos, santadir, houses);
 			move(robopos, robodir, houses);
