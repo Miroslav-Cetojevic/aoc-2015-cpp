@@ -63,7 +63,7 @@ int main() {
 		using PairHappiness = std::ptrdiff_t;
 		auto happymeter = ska::flat_hash_map<SeatingPair, PairHappiness>{};
 
-		auto entry = SeatingPairEntry{};
+		SeatingPairEntry entry;
 		while(file >> entry) {
 
 			auto hash1 = get_hash(entry.person1);
