@@ -16,10 +16,9 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto D = Dimensions{};
-
 		auto total_ribbon = 0UL;
 
+		Dimensions D;
 		while(file >> D) {
 
 			auto length = D.length;
