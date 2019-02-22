@@ -3,11 +3,11 @@
 #include <iostream>
 #include <unordered_map>
 
-template<typename T>
-struct Position { T x, y; };
+using ssize_t = std::ptrdiff_t;
 
-template<typename T>
-auto operator==(const Position<T>& lhs, const Position<T>& rhs) {
+struct Position { ssize_t x, y; };
+
+auto operator==(const Position& lhs, const Position& rhs) {
 	return (lhs.x == rhs.x && lhs.y == rhs.y);
 }
 
@@ -15,9 +15,9 @@ template<typename T>
 auto get_hash(T t) { return std::hash<T>{}(t); }
 
 namespace std {
-	template<typename T>
-	struct hash<Position<T>> {
-		auto operator()(const Position<T>& p) const {
+template<>
+	struct hash<Position> {
+		auto operator()(const Position& p) const {
 			return get_hash(p.x) ^ get_hash(p.y);
 		}
 	};
@@ -41,10 +41,9 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		using ssize_t = std::ptrdiff_t;
-		auto houses = std::unordered_map<Position<ssize_t>, ssize_t>{};
+		auto houses = std::unordered_map<Position, ssize_t>{};
 
-		auto santapos = Position<ssize_t>{};
+		auto santapos = Position{};
 		auto robopos = santapos;
 
 		// Santa & Robo start at pos(0,0)
