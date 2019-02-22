@@ -32,10 +32,10 @@ int main() {
 		}
 
 		auto max_distance = std::accumulate(reindeers.begin(), reindeers.end(), 0UL, [seconds] (auto sum, auto& reindeer) {
-			const auto distance = (reindeer.speed * reindeer.runtime);
-			const auto cycle = (reindeer.runtime + reindeer.resttime);
-			const auto cycles = (seconds / cycle);
-			const auto time_left = (seconds % cycle);
+			auto distance = (reindeer.speed * reindeer.runtime);
+			auto cycle = (reindeer.runtime + reindeer.resttime);
+			auto cycles = (seconds / cycle);
+			auto time_left = (seconds % cycle);
 
 			auto tmp_distance = (distance * cycles);
 
@@ -48,5 +48,6 @@ int main() {
 	} else {
 		std::cerr << "Error! Could not open " << filename << "!" << std::endl;
 	}
+
 	return 0;
 }
