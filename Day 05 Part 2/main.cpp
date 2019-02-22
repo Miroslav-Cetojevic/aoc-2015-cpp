@@ -40,9 +40,9 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto line = std::string{};
 		auto count = 0UL;
 
+		std::string line;
 		while(std::getline(file, line)) {
 			if(has_double_letter_pairs(line) && has_letter_sandwich(line)) {
 				++count;
