@@ -5,19 +5,15 @@
 #include <string>
 #include <unordered_map>
 
-template<typename T>
-struct Position { T row, col; };
+struct Position { std::size_t row, col; };
 
-template<typename T>
-auto& operator>>(std::istream& in, Position<T>& pos) {
+auto& operator>>(std::istream& in, Position& pos) {
 	return in >> pos.row >> pos.col;
 }
 
-template<typename T>
-struct EndPoints { Position<T> first, last; };
+struct EndPoints { Position first, last; };
 
-template<typename T>
-auto& operator>>(std::istream& in, EndPoints<T>& pos) {
+auto& operator>>(std::istream& in, EndPoints& pos) {
 	return in >> pos.first >> pos.last;
 }
 
@@ -38,8 +34,8 @@ int main() {
 
 	if(file.is_open()) {
 		constexpr auto gridlen = 1000UL;
-		constexpr auto numlights = gridlen*gridlen;
-		using Grid = std::array<std::uint64_t, numlights>;
+		constexpr auto numlights = (gridlen * gridlen);
+		using Grid = std::array<std::size_t, numlights>;
 		auto grid = Grid{};
 
 		using cmd = void (*)(Grid&, std::size_t);
@@ -50,7 +46,7 @@ int main() {
 		};
 
 		std::string instruction;
-		EndPoints<std::size_t> endpoints;
+		EndPoints endpoints;
 
 		while(file >> instruction >> endpoints) {
 
