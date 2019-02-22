@@ -1,7 +1,8 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <unordered_map>
+
+#include "unordered_map.hpp"
 
 using ssize_t = std::ptrdiff_t;
 
@@ -17,8 +18,8 @@ auto get_hash(T t) { return std::hash<T>{}(t); }
 namespace std {
 	template<>
 	struct hash<Position> {
-		auto operator()(const Position& p) const {
-			return get_hash(p.x) ^ get_hash(p.y);
+		auto operator()(const Position& pos) const {
+			return get_hash(pos.x) ^ get_hash(pos.y);
 		}
 	};
 }
@@ -30,7 +31,8 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto houses = std::unordered_map<Position, ssize_t>{};
+		auto houses = ska::unordered_map<Position, ssize_t>{};
+
 		auto pos = Position{};
 		++houses[pos]; // Santa starts at pos(0,0)
 
