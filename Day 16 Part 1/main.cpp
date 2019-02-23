@@ -1,19 +1,24 @@
 #include <algorithm>
-#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string.hpp>
-
-#include "flat_hash_map.hpp"
 
 struct Sue {
 	std::size_t id;
 	std::map<std::size_t, std::size_t> detectables;
 };
+
+struct Detectable {
+	std::size_t amount;
+	std::string name;
+};
+
+auto& operator>>(std::istream& in, Detectable& detectable) {
+	return in >> detectable.name >> detectable.amount;
+}
 
 template<typename T>
 auto get_hash(T t) { return std::hash<T>{}(t); }
@@ -25,23 +30,26 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto start = std::chrono::steady_clock::now();
 
 		auto aunties = std::vector<Sue>{};
 
-		auto tokens = std::vector<std::string>{};
+		auto ss = std::stringstream{};
 
 		std::string line;
 		while(std::getline(file, line)) {
 
-			boost::split(tokens, line, [] (auto c) { return (c == ' '); });
+			ss.str(line);
 
 			auto aunt = Sue{};
-			aunt.id = std::stoul(tokens[0]);
 
-			for(auto i = 2UL; i < tokens.size(); i += 2) {
-				aunt.detectables[get_hash(tokens[i-1])] = std::stoul(tokens[i]);
+			ss >> aunt.id;
+
+			Detectable detectable;
+			while(ss >> detectable) {
+				aunt.detectables[get_hash(detectable.name)] = detectable.amount;
 			}
+
+			ss.clear();
 
 			aunties.emplace_back(aunt);
 		}
@@ -61,9 +69,7 @@ int main() {
 			return std::includes(sue.begin(), sue.end(), aunt.detectables.begin(), aunt.detectables.end());
 		});
 
-		auto end = std::chrono::steady_clock::now();
 		std::cout << result->id << std::endl;
-		std::cout << "duration: " << std::chrono::duration_cast<std::chrono::microseconds>(end-start).count() << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
