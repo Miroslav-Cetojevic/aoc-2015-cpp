@@ -9,6 +9,8 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <chrono>
+auto now = [] { return std::chrono::steady_clock::now(); };
 
 struct Ingredient {
 	std::size_t id, calories;
@@ -19,16 +21,40 @@ auto& operator>>(std::istream& in, Ingredient& ingredient) {
 	static auto id = 0UL;
 	ingredient.id = id++;
 
-	static std::string name;
+	std::string name;
 	return in >> name >> ingredient.capacity >> ingredient.durability
 			  >> ingredient.flavor >> ingredient.texture >> ingredient.calories;
 }
 
+struct Properties {
+    std::array<std::ptrdiff_t, 4> data{};
+
+    auto begin() { return data.begin(); }
+    auto begin() const { return data.begin(); }
+    auto end() { return data.end(); }
+    auto end() const { return data.end(); }
+    auto& operator[](std::size_t n) { return data[n]; }
+    auto& operator[]( std::size_t n ) const { return data[n]; }
+};
+
+auto operator+(const Properties& lhs, const Properties& rhs) {
+	auto P = Properties{};
+	std::transform(lhs.begin(), lhs.end(), rhs.begin(), P.begin(), std::plus{});
+	return P;
+}
+
+auto operator*(const std::size_t scalar, const Ingredient& ingredient) {
+	auto n = static_cast<decltype(ingredient.capacity)>(scalar);
+	return Properties{n * ingredient.capacity,
+					  n * ingredient.durability,
+					  n * ingredient.flavor,
+					  n * ingredient.texture};
+}
 
 // this function is based on the following SO answer:
 // https://stackoverflow.com/a/22989846/699211
 template<typename B, typename I, typename N>
-void partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N& max_score) {
+auto partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N max_score) -> N {
 	if(spoons_left > 0) {
 
 		if((ingredient_id + 1) < n_baskets) {
@@ -39,36 +65,22 @@ void partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoon
 
 			for(auto n_spoons = min_spoons; n_spoons <= max_spoons; ++n_spoons){
 				baskets[ingredient_id] = n_spoons; /* replace last */
-				partition(baskets, n_baskets, ingredients, (ingredient_id + 1), (spoons_left - n_spoons), max_score);
+				max_score = partition(baskets, n_baskets, ingredients, (ingredient_id + 1), (spoons_left - n_spoons), max_score);
 			}
 
 		} else {
 			baskets[ingredient_id] = spoons_left;
 
 			auto tmp_baskets = baskets;
-			using Properties = std::array<std::ptrdiff_t, 4>;
 			auto properties = Properties{};
-
-			auto sum_properties = [] (auto acc, auto next) {
-				auto P = Properties{};
-				std::transform(acc.begin(), acc.end(), next.begin(), P.begin(), std::plus{});
-				return P;
-			};
-
-			auto multiply_properties = [] (auto num, auto ingredient) {
-				return Properties{num * ingredient.capacity,
-								  num * ingredient.durability,
-								  num * ingredient.flavor,
-								  num * ingredient.texture};
-			};
 
 			do {
 				properties = std::inner_product(tmp_baskets.begin(),
 												tmp_baskets.end(),
 												ingredients.begin(),
 												properties,
-												sum_properties,
-												multiply_properties);
+												std::plus{},
+												std::multiplies{});
 
 				auto tmp_score = std::accumulate(properties.begin(), properties.end(), 1UL, [] (auto product, auto value) {
 					return product *= ((value >= 0) ? value : 0);
@@ -81,6 +93,8 @@ void partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoon
 			} while(std::next_permutation(tmp_baskets.begin(), tmp_baskets.end()));
 		}
 	}
+
+	return max_score;
 }
 
 int main() {
@@ -90,6 +104,7 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
+		auto start = now();
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
@@ -99,12 +114,10 @@ int main() {
 
 		auto baskets = std::vector<std::size_t>(ingredients.size());
 
-		auto ingredient_id = 0UL;
-		auto spoons_left = 100UL;
-		auto max_score = 0UL;
-
-		partition(baskets, baskets.size(), ingredients, ingredient_id, spoons_left, max_score);
-
+		auto max_score = partition(baskets, baskets.size(), ingredients, 0UL, 100UL, 0UL);
+		auto finish = now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish-start).count();
+		std::cout << duration << std::endl;
 		std::cout << max_score << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
