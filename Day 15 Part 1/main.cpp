@@ -44,16 +44,16 @@ auto operator+(const Properties& lhs, const Properties& rhs) {
 }
 
 auto operator*(const std::size_t scalar, const Ingredient& ingredient) {
-	auto n = static_cast<decltype(ingredient.capacity)>(scalar);
-	return Properties{n * ingredient.capacity,
-					  n * ingredient.durability,
-					  n * ingredient.flavor,
-					  n * ingredient.texture};
+	return Properties{scalar * ingredient.capacity,
+					  scalar * ingredient.durability,
+					  scalar * ingredient.flavor,
+					  scalar * ingredient.texture};
 }
 
 // this function is based on this SO answer: https://stackoverflow.com/a/22989846/699211
 template<typename B, typename I, typename N>
 N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N max_score) {
+
 	if(spoons_left > 0) {
 
 		if((ingredient_id + 1) < n_baskets) {
@@ -62,32 +62,37 @@ N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_l
 
 			auto max_spoons = (spoons_left / 2);
 
-			for(auto n_spoons = min_spoons; n_spoons <= max_spoons; ++n_spoons){
-				baskets[ingredient_id] = n_spoons; /* replace last */
-				max_score = partition(baskets, n_baskets, ingredients, (ingredient_id + 1), (spoons_left - n_spoons), max_score);
+			for(auto n_spoons = min_spoons; n_spoons <= max_spoons; ++n_spoons) {
+
+				baskets[ingredient_id] = n_spoons;
+
+				max_score = partition(baskets,
+									  n_baskets,
+									  ingredients,
+									  (ingredient_id + 1),
+									  (spoons_left - n_spoons),
+									  max_score);
 			}
 
 		} else {
+
 			baskets[ingredient_id] = spoons_left;
 
 			auto tmp_baskets = baskets;
-			auto properties = Properties{};
 
 			do {
-				properties = std::inner_product(tmp_baskets.begin(),
-												tmp_baskets.end(),
-												ingredients.begin(),
-												properties,
-												std::plus{},
-												std::multiplies{});
+				auto properties = std::inner_product(tmp_baskets.begin(),
+													 tmp_baskets.end(),
+													 ingredients.begin(),
+													 Properties{},
+													 std::plus{},
+													 std::multiplies{});
 
-				auto tmp_score = std::accumulate(properties.begin(), properties.end(), 1UL, [] (auto product, auto value) {
+				auto tmp_score = std::accumulate(properties.begin(), properties.end(), N{1}, [] (auto product, auto value) {
 					return product *= ((value >= 0) ? value : 0);
 				});
 
 				max_score = std::max(max_score, tmp_score);
-
-				std::fill(properties.begin(), properties.end(), 0);
 
 			} while(std::next_permutation(tmp_baskets.begin(), tmp_baskets.end()));
 		}
@@ -103,6 +108,7 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
+
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
