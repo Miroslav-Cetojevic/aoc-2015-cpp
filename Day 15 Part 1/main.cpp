@@ -9,8 +9,6 @@
 #include <numeric>
 #include <string>
 #include <vector>
-#include <chrono>
-auto now = [] { return std::chrono::steady_clock::now(); };
 
 struct Ingredient {
 	std::size_t id, calories;
@@ -30,11 +28,13 @@ struct Properties {
     std::array<std::ptrdiff_t, 4> data{};
 
     auto begin() { return data.begin(); }
-    auto begin() const { return data.begin(); }
     auto end() { return data.end(); }
+
+    auto begin() const { return data.begin(); }
     auto end() const { return data.end(); }
+
     auto& operator[](std::size_t n) { return data[n]; }
-    auto& operator[]( std::size_t n ) const { return data[n]; }
+    auto& operator[](std::size_t n) const { return data[n]; }
 };
 
 auto operator+(const Properties& lhs, const Properties& rhs) {
@@ -51,15 +51,14 @@ auto operator*(const std::size_t scalar, const Ingredient& ingredient) {
 					  n * ingredient.texture};
 }
 
-// this function is based on the following SO answer:
-// https://stackoverflow.com/a/22989846/699211
+// this function is based on this SO answer: https://stackoverflow.com/a/22989846/699211
 template<typename B, typename I, typename N>
-auto partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N max_score) -> N {
+N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N max_score) {
 	if(spoons_left > 0) {
 
 		if((ingredient_id + 1) < n_baskets) {
 
-			auto min_spoons = ((ingredient_id == 0) ? 1UL : baskets[ingredient_id-1]);
+			auto min_spoons = ((ingredient_id == 0) ? N{1} : baskets[ingredient_id-1]);
 
 			auto max_spoons = (spoons_left / 2);
 
@@ -104,7 +103,6 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto start = now();
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
@@ -115,9 +113,7 @@ int main() {
 		auto baskets = std::vector<std::size_t>(ingredients.size());
 
 		auto max_score = partition(baskets, baskets.size(), ingredients, 0UL, 100UL, 0UL);
-		auto finish = now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish-start).count();
-		std::cout << duration << std::endl;
+
 		std::cout << max_score << std::endl;
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
