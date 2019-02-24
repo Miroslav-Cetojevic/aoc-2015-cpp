@@ -9,9 +9,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <chrono>
-auto now = [] { return std::chrono::steady_clock::now(); };
-
 struct AuntSue {
 	std::size_t id;
 	std::map<std::size_t, std::size_t> detectables;
@@ -60,7 +57,6 @@ int main() {
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto start = now();
 
 		auto aunties = std::vector<AuntSue>{};
 
@@ -112,6 +108,7 @@ int main() {
 		};
 
 		auto real_sue = std::find_if(aunties.begin(), aunties.end(), [&sue, &differences, &cmp_map] (auto& aunt) {
+
 			auto other_sue = aunt.detectables;
 
 			auto items_of_interest = extract_items_of_interest(differences, other_sue);
@@ -129,10 +126,6 @@ int main() {
 		});
 
 		std::cout << real_sue->id << std::endl;
-
-		auto finish = now();
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(finish-start).count();
-		std::cout << duration << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
