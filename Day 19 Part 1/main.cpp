@@ -5,12 +5,12 @@
 #include <unordered_set>
 #include <vector>
 
-struct MoleculeEntry {
+struct MoleculesEntry {
 	std::string input;
 	std::string replacement;
 };
 
-auto& operator>>(std::istream& in, MoleculeEntry& entry) {
+auto& operator>>(std::istream& in, MoleculesEntry& entry) {
 	return in >> entry.input >> entry.replacement;
 }
 
@@ -27,7 +27,7 @@ int main() {
 		std::string medicine;
 		file >> medicine;
 
-		MoleculeEntry entry;
+		MoleculesEntry entry;
 		while(file >> entry) {
 			replacements[entry.input].push_back(entry.replacement);
 		}
