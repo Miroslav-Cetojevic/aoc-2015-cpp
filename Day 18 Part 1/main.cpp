@@ -1,10 +1,8 @@
-#include <algorithm>
 #include <array>
 #include <fstream>
 #include <iostream>
 #include <numeric>
 #include <string>
-#include <vector>
 
 int main() {
 	std::ios_base::sync_with_stdio(false);
@@ -61,6 +59,7 @@ int main() {
 		auto count = std::accumulate(grid.begin(), grid.end(), 0U);
 
 		std::cout << count << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
