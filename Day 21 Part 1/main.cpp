@@ -3,9 +3,9 @@
 #include <vector>
 
 struct Entity {
-	std::size_t hp;
-	std::size_t dmg;
-	std::size_t ac;
+	std::size_t health;
+	std::size_t damage;
+	std::size_t armor;
 };
 
 struct Item {
@@ -23,7 +23,7 @@ int main() {
 	auto min_gold = std::numeric_limits<std::size_t>::max();
 
 	auto boss = Entity{103, 9, 2};
-	Entity hero;
+	Entity hero; // no need to initialize, the innermost loop provides the values
 
 	// the four loops is basically an implementation of
 	// the cartesian product of the four vectors above
@@ -37,11 +37,11 @@ int main() {
 
 					hero = {100, (weapon.stat + ring_dmg.stat), (armor.stat + ring_ac.stat)};
 
-					auto hero_real_dmg = (hero.dmg - boss.ac);
-					auto boss_real_dmg = (boss.dmg - hero.ac);
+					auto hero_real_dmg = (hero.damage - boss.armor);
+					auto boss_real_dmg = (boss.damage - hero.armor);
 
-					auto hero_rounds = ((hero.hp / boss_real_dmg) + ((hero.hp % boss_real_dmg) > 0));
-					auto boss_rounds = ((boss.hp / hero_real_dmg) + ((boss.hp % hero_real_dmg) > 0));
+					auto hero_rounds = ((hero.health / boss_real_dmg) + ((hero.health % boss_real_dmg) > 0));
+					auto boss_rounds = ((boss.health / hero_real_dmg) + ((boss.health % hero_real_dmg) > 0));
 
 					if(hero_rounds >= boss_rounds) {
 						min_gold = std::min(min_gold, (weapon.price + armor.price + ring_dmg.price + ring_ac.price));
