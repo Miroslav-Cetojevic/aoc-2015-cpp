@@ -1,8 +1,6 @@
 #include <algorithm>
-#include <chrono>
 #include <iostream>
 #include <vector>
-
 
 struct Entity {
 	std::size_t hp;
