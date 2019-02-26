@@ -182,7 +182,7 @@ int main() {
 			continue;
 		}
 
-		// there's no spell to be cast, so we return to the previous state
+		// there's no spell to be cast, so we discard the current state
 		if(end_of_spellbook(state)) {
 			delete_state();
 			continue;
