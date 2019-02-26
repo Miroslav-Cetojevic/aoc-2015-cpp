@@ -74,15 +74,13 @@ int main() {
 
 		auto instructions = std::vector<Instruction>{};
 
-		constexpr auto max_tokens = 3UL;
-		auto tokens = std::vector<std::string>{};
-		tokens.reserve(max_tokens);
-
 		auto ss = std::stringstream{};
+
 		std::string line;
 		std::string scmd;
 		std::string reg;
 		std::ptrdiff_t val;
+
 		while(std::getline(file, line)) {
 
 			ss.str(line);
@@ -106,18 +104,17 @@ int main() {
 			ss.clear();
 		}
 
-		for(auto index = 0UL; index < instructions.size(); ) {
-
+		auto run_cmd = [&instructions, &registers] (auto index) {
 			auto& instruction = instructions[index];
 
-			if(instruction.execute(registers[instruction.register_])) {
+			auto& register_ = registers[instruction.register_];
 
-				index += instructions[index].offset;
+			auto offset = ((instruction.execute(register_)) ? instruction.offset : 1);
 
-			} else {
-				++index;
-			}
-		}
+			return offset;
+		};
+
+		for(auto index = 0UL; index < instructions.size(); index += run_cmd(index));
 
 		std::cout << registers[b].value << std::endl;
 
