@@ -162,7 +162,7 @@ int main() {
 
 	auto end_of_spellbook = [] (auto& state) { return (state.page_no == state.spellbook.size()); };
 
-	auto get_least_mana = [&states, least_mana, &delete_state] (auto& state) {
+	auto get_least_mana = [least_mana, &delete_state] (auto& state) {
 		// a victory has been attained, the last state is not needed anymore
 		delete_state();
 		return ((least_mana > 0) ? std::min(least_mana, state.mana_spent) : state.mana_spent);
