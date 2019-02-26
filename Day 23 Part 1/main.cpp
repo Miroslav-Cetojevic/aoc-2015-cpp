@@ -108,7 +108,7 @@ int main() {
 
 		for(auto index = 0UL; index < instructions.size(); ) {
 
-			auto instruction = instructions[index];
+			auto& instruction = instructions[index];
 
 			if(instruction.execute(registers[instruction.register_])) {
 
