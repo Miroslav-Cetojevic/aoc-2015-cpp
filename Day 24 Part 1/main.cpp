@@ -6,6 +6,21 @@
 #include <string>
 #include <vector>
 
+template <typename T>
+struct ReverseIterator {
+	T& container;
+
+    ReverseIterator(T& container) : container(container) {}
+
+    auto begin() { return container.rbegin(); }
+    auto end() { return container.rend(); }
+};
+
+template <typename T>
+auto reverse(T& container) {
+    return ReverseIterator<T>(container);
+}
+
 template<typename Set, typename Sets, typename W, typename L, typename N>
 auto find_subset(Set&& subset, Sets&& subsets, W&& weights, L&& lookup, N limit, N sum) {
 
@@ -22,12 +37,12 @@ auto find_subset(Set&& subset, Sets&& subsets, W&& weights, L&& lookup, N limit,
 
 	if(lookup[limit-1][sum]) {
 		auto new_subset = subset;
-		find_subset(new_subset, subsets, weights, lookup, limit-1, sum);
+		find_subset(new_subset, subsets, weights, lookup, (limit - 1), sum);
 	}
 
 	if(sum >= weights[limit] && lookup[limit-1][sum-weights[limit]]) {
 		subset.push_back(weights[limit]);
-		find_subset(subset, subsets, weights, lookup, limit-1, (sum - weights[limit]));
+		find_subset(subset, subsets, weights, lookup, (limit - 1), (sum - weights[limit]));
 	}
 }
 
@@ -40,6 +55,7 @@ auto find_subsets(const T& weights, N sum) {
 
 	for(auto& entry : lookup) {
 		entry = std::vector<Boolean>(sum + 1);
+		entry.front() = true;
 	}
 
 	if (weights.front() <= sum) {
@@ -50,15 +66,14 @@ auto find_subsets(const T& weights, N sum) {
 
 		for(auto j = 0UL; j < sum + 1; ++j) {
 
-            lookup[i][j] = ((weights[i] <= j) ?
+            lookup[i][j] = (weights[i] <= j) ?
             			   (lookup[i-1][j] || lookup[i-1][j-weights[i]]) :
-						   lookup[i-1][j]);
+						   lookup[i-1][j];
 		}
 	}
 
+	// recursive function
 	find_subset(T{}, subsets, weights, lookup, (weights.size() - 1), sum);
-
-	std::reverse(subsets.begin(), subsets.end());
 
 	return subsets;
 }
@@ -74,12 +89,8 @@ auto find_min_sets(const T& subsets) {
 
 			if(!min_sets.empty()) {
 
-				// reverse-iterating through min_sets
-				auto i = min_sets.size();
-				while((i--) > 0) {
-					if(min_sets[i].size() == min_size) {
-						min_sets.pop_back();
-					}
+				for(const auto& min_set : reverse(min_sets)) {
+					if(min_set.size() == min_size) { min_sets.pop_back(); }
 				}
 			}
 
