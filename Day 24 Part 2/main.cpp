@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -10,14 +11,14 @@ template <typename T>
 struct ReverseIterator {
 	T& container;
 
-    ReverseIterator(T& container) : container(container) {}
+    ReverseIterator(T&& container) : container(container) {}
 
     auto begin() { return container.rbegin(); }
     auto end() { return container.rend(); }
 };
 
 template <typename T>
-auto reverse(T& container) {
+auto reverse(T&& container) {
     return ReverseIterator<T>(container);
 }
 
@@ -53,8 +54,9 @@ auto find_subsets(const T& weights, N sum) {
 	using Boolean = std::uint8_t;
 	auto lookup = std::vector<std::vector<Boolean>>(weights.size());
 
+	auto entry_size = (sum + 1);
 	for(auto& entry : lookup) {
-		entry = std::vector<Boolean>(sum + 1);
+		entry = std::vector<Boolean>(entry_size);
 		entry.front() = true;
 	}
 
@@ -64,7 +66,7 @@ auto find_subsets(const T& weights, N sum) {
 
 	for(auto i = 1UL; i < weights.size(); ++i) {
 
-		for(auto j = 0UL; j < sum + 1; ++j) {
+		for(auto j = 0UL; j < entry_size; ++j) {
 
             lookup[i][j] = (weights[i] <= j) ?
             			   (lookup[i-1][j] || lookup[i-1][j-weights[i]]) :
@@ -80,7 +82,7 @@ auto find_subsets(const T& weights, N sum) {
 
 template<typename T>
 auto find_min_sets(const T& subsets) {
-	auto min_size = std::numeric_limits<std::size_t>::max();
+	auto min_size = std::numeric_limits<std::uintmax_t>::max();
 	auto min_sets = T{};
 
 	for(const auto& subset : subsets) {
@@ -107,7 +109,7 @@ auto find_min_sets(const T& subsets) {
 
 template<typename T>
 auto find_min_quantum_entanglement(const T& min_sets) {
-	auto min_value = std::numeric_limits<std::size_t>::max();
+	auto min_value = std::numeric_limits<std::uintmax_t>::max();
 
 	for(const auto& set : min_sets) {
 		auto product = std::accumulate(set.begin(), set.end(), 1UL, std::multiplies<>());
@@ -125,18 +127,12 @@ int main() {
 
 	if(file.is_open()) {
 
-		auto weights = std::vector<std::size_t>{};
+		auto weights = std::vector<std::uintmax_t>{};
 
-		auto total_weight = 0UL;
-
-		std::size_t weight;
-
-		while(file >> weight) {
-
-			total_weight += weight;
-
+		auto total_weight = std::accumulate(std::istream_iterator<std::uintmax_t>{file}, {}, 0UL, [&weights] (auto acc, auto weight) {
 			weights.push_back(weight);
-		}
+			return (acc + weight);
+		});
 
 		auto n_groups = 4;
 		auto sum_per_group = (total_weight / n_groups);
