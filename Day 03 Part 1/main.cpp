@@ -1,53 +1,63 @@
 #include <fstream>
-#include <functional>
 #include <iostream>
 
 #include "unordered_map.hpp"
 
-using ssize_t = std::ptrdiff_t;
-
-struct Position { ssize_t x, y; };
+struct Position {
+	int x, y;
+};
 
 auto operator==(const Position& lhs, const Position& rhs) {
-	return (lhs.x == rhs.x && lhs.y == rhs.y);
+	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
-
-template<typename T>
-auto get_hash(T t) { return std::hash<T>{}(t); }
 
 namespace std {
 	template<>
 	struct hash<Position> {
 		auto operator()(const Position& pos) const {
-			return get_hash(pos.x) ^ get_hash(pos.y);
+			// encode x to the first 16 bits of the hash
+			// and y to the last 16 bits
+			return (pos.x << 16) + pos.y;
 		}
 	};
 }
 
 int main() {
-	std::ios::sync_with_stdio(false);
 
 	auto filename = std::string{"directions.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto houses = ska::unordered_map<Position, ssize_t>{};
+
+		// a map allows me to easily track how many
+		// times a particular house has been visited
+		auto houses = ska::unordered_map<Position, int>{};
 
 		auto pos = Position{};
-		++houses[pos]; // Santa starts at pos(0,0)
+		++houses[pos]; // Santa always starts at pos(0,0)
 
-		char direction;
+		auto direction = char{};
+
+		const auto NORTH = '^';
+		const auto WEST  = '>';
+		const auto SOUTH = 'v';
+		const auto EAST  = '<';
+
 		while(file >> direction) {
+
 			switch(direction) {
-				case '^': ++pos.y; break;
-				case '>': ++pos.x; break;
-				case 'v': --pos.y; break;
-				case '<': --pos.x; break;
+				case NORTH : ++pos.y; break;
+				case WEST  : ++pos.x; break;
+				case SOUTH : --pos.y; break;
+				case EAST  : --pos.x; break;
+				default: std::cerr << "Crap, something went wrong!" << std::endl;
 			}
+
 			++houses[pos];
 		}
 
 		std::cout << houses.size() << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
