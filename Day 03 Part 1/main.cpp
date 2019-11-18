@@ -36,12 +36,12 @@ int main() {
 		auto pos = Position{};
 		++houses[pos]; // Santa always starts at pos(0,0)
 
-		auto direction = char{};
-
 		const auto NORTH = '^';
 		const auto WEST  = '>';
 		const auto SOUTH = 'v';
 		const auto EAST  = '<';
+
+		char direction;
 
 		while(file >> direction) {
 
