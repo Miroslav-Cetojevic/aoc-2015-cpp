@@ -1,48 +1,56 @@
 #include <fstream>
-#include <functional>
 #include <iostream>
 
 #include "unordered_map.hpp"
 
-using ssize_t = std::ptrdiff_t;
-
-struct Position { ssize_t x, y; };
+struct Position {
+	int x, y;
+};
 
 auto operator==(const Position& lhs, const Position& rhs) {
-	return (lhs.x == rhs.x && lhs.y == rhs.y);
+	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
 }
 
-template<typename T>
-auto get_hash(T t) { return std::hash<T>{}(t); }
-
 namespace std {
-template<>
+	template<>
 	struct hash<Position> {
-		auto operator()(const Position& p) const {
-			return get_hash(p.x) ^ get_hash(p.y);
+		auto operator()(const Position& pos) const {
+			// encode x to the first 16 bits of the hash
+			// and y to the last 16 bits
+			return (pos.x << 16) + pos.y;
 		}
 	};
 }
 
 template<typename P, typename D, typename H>
-auto move(P& pos, D dir, H& houses) {
-	switch(dir) {
-		case '^': ++pos.y; break;
-		case '>': ++pos.x; break;
-		case 'v': --pos.y; break;
-		case '<': --pos.x; break;
+auto move(P& pos, D direction, H& houses) {
+
+	constexpr auto NORTH = '^';
+	constexpr auto WEST  = '>';
+	constexpr auto SOUTH = 'v';
+	constexpr auto EAST  = '<';
+
+	switch(direction) {
+		case NORTH : ++pos.y; break;
+		case WEST  : ++pos.x; break;
+		case SOUTH : --pos.y; break;
+		case EAST  : --pos.x; break;
+		default: std::cerr << "Crap, something went wrong!" << std::endl;
 	}
+
 	++houses[pos];
 }
 
 int main() {
-	std::ios::sync_with_stdio(false);
 
 	auto filename = std::string{"directions.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto houses = ska::unordered_map<Position, ssize_t>{};
+
+		// a map allows me to easily track how many
+		// times a particular house has been visited
+		auto houses = ska::unordered_map<Position, int>{};
 
 		auto santapos = Position{};
 		auto robopos = santapos;
@@ -51,13 +59,16 @@ int main() {
 		++houses[santapos];
 		++houses[robopos];
 
-		char santadir, robodir;
+		char santadir;
+		char robodir;
+
 		while(file >> santadir >> robodir) {
 			move(santapos, santadir, houses);
 			move(robopos, robodir, houses);
 		}
 
 		std::cout << houses.size() << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
