@@ -27,23 +27,14 @@ auto has_adjacent_twin_letters(const std::string& string) {
 
 auto has_triple_vowels(const std::string& string) {
 
-	static constexpr auto limit = 3;
-	auto count = 0;
-
-	auto result = std::find_if(string.begin(), string.end(), [&count] (const auto& c) {
+	auto result = std::count_if(string.begin(), string.end(), [] (const auto& c) {
 
 		auto has_vowel = (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
 
-		if(has_vowel) {
-			++count;
-		}
-
-		auto is_triplet = (count == limit);
-
-		return is_triplet;
+		return has_vowel;
 	});
 
-	return (result != string.end());
+	return (result >= 3);
 }
 
 auto is_nice_string(const std::string& string) {
