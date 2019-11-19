@@ -4,14 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <boost/iterator/counting_iterator.hpp>
-
-template<typename T>
-struct Range {
-	boost::counting_iterator<T, boost::use_default, T> begin, end;
-	Range(T b, T e): begin(b), end(e) {}
-};
-
 struct Position {
 	unsigned row, col;
 };
