@@ -4,13 +4,12 @@
 #include <string>
 #include <vector>
 
-template<typename S>
-auto has_bad_substring(const S& string) {
+auto has_bad_substring(const std::string& string) {
 
-	static const auto bad_strings = std::vector{ S{"ab"},
-												 S{"cd"},
-												 S{"pq"},
-												 S{"xy"} };
+	static const auto bad_strings = std::vector<std::string>{ {"ab"},
+															  {"cd"},
+															  {"pq"},
+															  {"xy"} };
 
 	auto is_bad = std::any_of(bad_strings.begin(), bad_strings.end(), [&string] (const auto& bad_string) {
 		return (string.find(bad_string) != string.npos);
@@ -19,49 +18,39 @@ auto has_bad_substring(const S& string) {
 	return is_bad;
 }
 
-template<typename S, typename N>
-auto find_vowel(const S& string, N pos) {
+auto has_adjacent_twin_letters(const std::string& string) {
 
-	auto c = string[pos];
+	auto result = std::adjacent_find(string.begin(), string.end());
 
-	auto result = (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
-
-	return (result ? 1 : 0);
+	return (result != string.end());
 }
 
-template<typename S>
-auto has_double_letters_and_triple_vowels(const S& string) {
+auto has_triple_vowels(const std::string& string) {
 
-	auto count_vowels = find_vowel(string, 0U);
-	auto has_triple_vowels = false;
-	auto has_double_letters = false;
+	static constexpr auto limit = 3;
+	auto count = 0;
 
-	auto has_both = false;
+	auto result = std::find_if(string.begin(), string.end(), [&count] (const auto& c) {
 
-	for(auto i = 0U, j = (i + 1);
-		j < string.length() && !has_both;
-		++i, ++j) {
+		auto has_vowel = (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u');
 
-		if(!has_double_letters) {
-
-			has_double_letters = (string[i] == string[j]);
+		if(has_vowel) {
+			++count;
 		}
 
-		count_vowels += find_vowel(string, j);
+		auto is_triplet = (count == limit);
 
-		has_triple_vowels = (count_vowels >= 3);
+		return is_triplet;
+	});
 
-		has_both = (has_double_letters && has_triple_vowels);
-	}
-
-	return has_both;
+	return (result != string.end());
 }
 
-template<typename S>
-auto is_nice_string(const S& string) {
+auto is_nice_string(const std::string& string) {
 
 	return !has_bad_substring(string)
-		   && has_double_letters_and_triple_vowels(string);
+		   && has_adjacent_twin_letters(string)
+		   && has_triple_vowels(string);
 }
 
 int main() {
@@ -78,7 +67,6 @@ int main() {
 		while(std::getline(file, line)) {
 
 			if(is_nice_string(line)) {
-
 				++count;
 			}
 		}
