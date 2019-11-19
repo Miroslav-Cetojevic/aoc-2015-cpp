@@ -1,66 +1,133 @@
-#include <bitset>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
-struct Position {
-	unsigned row, col;
+#include <boost/algorithm/string.hpp>
+
+using Wire = std::string;
+using Signal = std::uint16_t;
+using Command = Signal (*) (Signal, Signal);
+
+struct Operation {
+	Command cmd;
+	std::string lhs_operand;
+	std::string rhs_operand;
 };
 
-auto& operator>>(std::istream& in, Position& pos) {
-	return in >> pos.row >> pos.col;
-}
+template<typename T>
+T AND(const T lhs, const T rhs) { return lhs & rhs; }
 
-struct EndPoints {
-	Position first, last;
-};
+template<typename T>
+T OR(const T lhs, const T rhs) { return lhs | rhs; }
 
-auto& operator>>(std::istream& in, EndPoints& pos) {
-	return in >> pos.first >> pos.last;
-}
+template<typename T>
+T LSHIFT(const T lhs, const T rhs) { return lhs << rhs; }
+
+template<typename T>
+T RSHIFT(const T lhs, const T rhs) { return lhs >> rhs; }
+
+template<typename T>
+T NOT(const T lhs, const T) { return ~lhs; }
+
+template<typename T>
+T SIGNAL(const T lhs, const T) { return lhs; }
 
 int main() {
 
-	auto filename = std::string{"instructions.txt"};
+	auto filename = std::string{"circuit.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		constexpr auto gridlen = 1000U;
-		constexpr auto numlights = (gridlen * gridlen);
+		auto signal = std::string{};
 
-		using Grid = std::bitset<numlights>;
-		auto grid = Grid{};
-
-		auto on = [] (auto& grid, auto pos) { grid.set(pos); };
-		auto off = [] (auto& grid, auto pos) { grid.reset(pos); };
-		auto toggle = [] (auto& grid, auto pos) { grid.flip(pos); };
-
-		using cmd = void (*) (Grid&, unsigned);
-		auto cmd_map = std::unordered_map<std::string, cmd>{
-			{"on", on},
-			{"off", off},
-			{"toggle", toggle}
+		auto commands = std::unordered_map<std::string, Command>{
+			{"AND", AND},
+			{"OR", OR},
+			{"LSHIFT", LSHIFT},
+			{"RSHIFT", RSHIFT},
+			{"NOT", NOT},
+			{signal, SIGNAL}
 		};
 
-		std::string instruction;
-		EndPoints endpoints;
+		auto operations = std::unordered_map<Wire, Operation>{};
+		auto wires = std::unordered_map<Wire, Signal>{};
 
-		while(file >> instruction >> endpoints) {
+		/*
+		 * map each line to a set of operations on a single wire
+		 */
+		const auto max_tokens = 5U;
+		auto tokens = std::vector<std::string>{max_tokens};
 
-			auto current_cmd = cmd_map[instruction];
+		auto line = std::string{};
 
-			for(auto row = endpoints.first.row; row <= endpoints.last.row; ++row) {
+		while(std::getline(file, line)) {
 
-				for(auto col = endpoints.first.col; col <= endpoints.last.col; ++col) {
+			boost::split(tokens, line, [] (auto c) { return (c == ' '); });
 
-					current_cmd(grid, (row * gridlen + col));
-				}
+			// last element is always a wire
+			auto& wire = tokens.back();
+
+			// 4 tokens means a binary operation, 3 tokens is an unary operation,
+			// and 2 tokens is a simple assignment
+			if(tokens.size() == 4) {
+				operations.emplace(wire, Operation{commands[tokens[1]], tokens[0], tokens[2]});
+			} else if(tokens.size() == 3) {
+				operations.emplace(wire, Operation{commands[tokens[0]], tokens[1], {}});
+			} else {
+				operations.emplace(wire, Operation{commands[signal], tokens[0], {}});
 			}
 		}
 
-		std::cout << grid.count() << std::endl;
+		auto get_signal = [] (auto is_operand_signal, auto& operand, auto is_wire_mapped, auto& wire) {
+			return (is_operand_signal ? std::stoul(operand) : (is_wire_mapped ? wire->second : 0));
+		};
+
+		//execute operations
+		for(auto operation = operations.begin(); !operations.empty();) {
+
+			auto& lhs_str = operation->second.lhs_operand;
+			auto& rhs_str = operation->second.rhs_operand;
+
+			auto command = operation->second.cmd;
+
+			auto is_lhs_signal = std::isdigit(lhs_str.front());
+			auto is_rhs_signal = std::isdigit(rhs_str.front());
+
+			auto lhs_wire = wires.find(lhs_str);
+			auto rhs_wire = wires.find(rhs_str);
+
+			auto is_lhs_wire_mapped = (lhs_wire != wires.end());
+			auto is_rhs_wire_mapped = (rhs_wire != wires.end());
+
+			auto is_lhs_operand_ok = (is_lhs_signal || is_lhs_wire_mapped);
+			auto is_rhs_operand_ok = (is_rhs_signal || rhs_str.empty() || is_rhs_wire_mapped);
+
+			// operation has either signals, mapped wires or a mix of both
+			if(is_lhs_operand_ok && is_rhs_operand_ok) {
+
+				auto lhs_signal = get_signal(is_lhs_signal, lhs_str, is_lhs_wire_mapped, lhs_wire);
+				auto rhs_signal = get_signal(is_rhs_signal, rhs_str, is_rhs_wire_mapped, rhs_wire);
+
+				wires[operation->first] = command(lhs_signal, rhs_signal);
+
+				operation = operations.erase(operation);
+
+			} else {
+				// no operation possible right now, so move on
+				++operation;
+			}
+
+			// if there are still operations left at the end
+			// of the map, restart the whole process
+			if(operation == operations.end() && !operations.empty()) {
+				operation = operations.begin();
+			}
+		}
+
+		std::cout << wires["a"] << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
