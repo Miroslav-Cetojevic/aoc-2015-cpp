@@ -11,45 +11,64 @@ struct Range {
 	Range(T b, T e): begin(b), end(e) {}
 };
 
-template<typename S, std::size_t diff = 2>
-bool has_letter_sandwich(const S& evaluable) {
-	auto range = Range{diff, evaluable.size()};
+auto has_double_letter_pairs(const std::string& string) {
 
-	auto result = std::any_of(range.begin, range.end, [&evaluable] (auto i) {
-		return (evaluable[i] == evaluable[i-diff]);
+	static constexpr decltype(string.size()) diff = 1;
+
+	auto range = Range{diff, string.size()}; // start search at index 1
+
+	auto has_double_pairs = std::any_of(range.begin, range.end, [&string] (auto i) {
+
+		auto first_pair = string.substr((i-diff), 2);
+		auto second_pair = string.find(first_pair, (i+diff));
+
+		auto has_both_pairs = (second_pair != string.npos);
+
+		return has_both_pairs;
 	});
 
-	return result;
+	return has_double_pairs;
 }
 
-template<typename S, std::size_t diff = 1>
-auto has_double_letter_pairs(const S& evaluable) {
-	auto range = Range{diff, evaluable.size()};
+auto has_letter_sandwich(const std::string& string) {
 
-	auto result = std::any_of(range.begin, range.end, [&evaluable] (auto i) {
-		return (evaluable.find(evaluable.substr(i - diff, 2), (i + 1)) != evaluable.npos);
+	static constexpr decltype(string.size()) diff = 2;
+
+	auto range = Range{diff, string.size()}; // start search at index 2
+
+	auto has_sandwich = std::any_of(range.begin, range.end, [&string] (auto i) {
+		return (string[i] == string[i-diff]);
 	});
 
-	return result;
+	return has_sandwich;
+}
+
+auto has_nice_string(const std::string& string) {
+
+	return has_double_letter_pairs(string)
+		   && has_letter_sandwich(string);
 }
 
 int main() {
-	std::ios::sync_with_stdio(false);
 
 	auto filename = std::string{"strings.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto count = 0UL;
+
+		auto count = 0;
 
 		std::string line;
+
 		while(std::getline(file, line)) {
-			if(has_double_letter_pairs(line) && has_letter_sandwich(line)) {
+
+			if(has_nice_string(line)) {
 				++count;
 			}
 		}
 
 		std::cout << count << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
