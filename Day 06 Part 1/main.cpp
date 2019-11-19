@@ -20,15 +20,6 @@ auto& operator>>(std::istream& in, EndPoints& pos) {
 	return in >> pos.first >> pos.last;
 }
 
-template<typename G, typename T>
-auto on(G& grid, T pos) { grid.set(pos); }
-
-template<typename G, typename T>
-auto off(G& grid, T pos) { grid.reset(pos); }
-
-template<typename G, typename T>
-auto toggle(G& grid, T pos) { grid.flip(pos); }
-
 int main() {
 
 	auto filename = std::string{"instructions.txt"};
@@ -41,6 +32,10 @@ int main() {
 
 		using Grid = std::bitset<numlights>;
 		auto grid = Grid{};
+
+		auto on = [] (auto& grid, auto pos) { grid.set(pos); };
+		auto off = [] (auto& grid, auto pos) { grid.reset(pos); };
+		auto toggle = [] (auto& grid, auto pos) { grid.flip(pos); };
 
 		using cmd = void (*) (Grid&, unsigned);
 		auto cmd_map = std::unordered_map<std::string, cmd>{
