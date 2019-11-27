@@ -3,24 +3,24 @@
 #include <string>
 
 int main() {
-	std::ios_base::sync_with_stdio(false);
 
 	auto filename = std::string{"list.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
+		auto list = std::string{};
+
 		file.seekg(0, std::ios::end);
-		auto contents = std::string{};
-		contents.resize(file.tellg());
+		list.resize(file.tellg());
 		file.seekg(0, std::ios::beg);
-		file.read(contents.data(), contents.size());
+		file.read(list.data(), list.size());
 
 		auto escsum = std::size_t{};
 		auto escmemsum = escsum;
 		auto nlsum = escsum;
 
-		for(auto it = contents.begin(); it != contents.end(); ++it) {
+		for(auto it = list.begin(); it != list.end(); ++it) {
 			auto c = *it;
 			if(c == '\n') { ++nlsum; }
 			if(c == '\\') {
@@ -35,11 +35,12 @@ int main() {
 			}
 		}
 
-		auto codesum = contents.size() - nlsum;
+		auto codesum = list.size() - nlsum;
 		auto memsum = codesum - (2 * nlsum) - escsum + escmemsum;
 		auto result = (codesum - memsum);
 
 		std::cout << result << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
