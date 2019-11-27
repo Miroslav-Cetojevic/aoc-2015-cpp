@@ -31,6 +31,7 @@ using Operations = std::unordered_map<WireID, Operation>;
 using Command = Signal (*) (Signal, Signal);
 using Commands = std::unordered_map<std::string, Command>;
 
+// courtesy of Jonathan Boccara, https://www.fluentcpp.com/2017/04/21/how-to-split-a-string-in-c/
 auto split(std::vector<std::string>& tokens, const std::string& s, char delimiter) {
 
    tokens.clear();
@@ -137,18 +138,12 @@ auto get_operations_from_file(const std::string& filename) {
 
 auto calculate_target_signal(const WireID& target_id, Operations& operations) {
 
-	auto NOT = [] (const auto lhs, const auto) -> Signal { return ~lhs; };
-	auto AND = [] (const auto lhs, const auto rhs) -> Signal { return lhs & rhs; };
-	auto OR = [] (const auto lhs, const auto rhs) -> Signal { return lhs | rhs; };
-	auto LSHIFT = [] (const auto lhs, const auto rhs) -> Signal { return lhs << rhs; };
-	auto RSHIFT = [] (const auto lhs, const auto rhs) -> Signal { return lhs >> rhs; };
-
-	auto commands = Commands{
-		{"NOT", NOT},
-		{"AND", AND},
-		{"OR", OR},
-		{"LSHIFT", LSHIFT},
-		{"RSHIFT", RSHIFT},
+	Commands commands = {
+		{"NOT", [] (const auto lhs, const auto) -> Signal { return ~lhs; }},
+		{"AND", [] (const auto lhs, const auto rhs) -> Signal { return lhs & rhs; }},
+		{"OR", [] (const auto lhs, const auto rhs) -> Signal { return lhs | rhs; }},
+		{"LSHIFT", [] (const auto lhs, const auto rhs) -> Signal { return lhs << rhs; }},
+		{"RSHIFT", [] (const auto lhs, const auto rhs) -> Signal { return lhs >> rhs; }}
 	};
 
 	auto start = operations.find(target_id);
