@@ -11,21 +11,21 @@
 #include <boost/iterator/counting_iterator.hpp>
 
 using Location = std::string;
-using LocationID = std::size_t;
-using Distance = std::size_t;
+using LocationID = unsigned;
+using Distance = unsigned;
 
 struct Route {
-	LocationID location1, location2;
+	LocationID location_id1, location_id2;
 	Distance distance;
 };
 
 struct RouteEntry {
-	std::string location1, location2;
-	std::size_t distance;
+	Location location_A, location_B;
+	Distance distance;
 };
 
-auto& operator>>(std::istream& in, RouteEntry& re) {
-	return in >> re.location1 >> re.location2 >> re.distance;
+auto& operator>>(std::istream& in, RouteEntry& entry) {
+	return in >> entry.location_A >> entry.location_B >> entry.distance;
 }
 
 template<typename T>
@@ -41,56 +41,67 @@ auto factorial(T n) {
 }
 
 int main() {
-	std::ios_base::sync_with_stdio(false);
 
 	auto filename = std::string{"locations.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
-		auto geo_map = std::unordered_map<Location, LocationID>{};
+
 		auto locations = std::set<LocationID>{};
 
-		auto add_location = [&geo_map, &locations](const auto& location) {
+		auto add_location = [&locations](const auto& location) {
+
 			static auto vertex_id = LocationID{};
+			static auto geo_map = std::unordered_map<Location, LocationID>{};
+
 			auto pos = geo_map.try_emplace(location, 0);
+
 			if(pos.second) {
 				pos.first->second = vertex_id++;
 				locations.insert(pos.first->second);
 			}
+
 			return pos.first->second;
 		};
 
 		auto routes = std::vector<Route>{};
 		auto entry = RouteEntry{};
+
 		while(file >> entry) {
-			routes.emplace_back(Route{add_location(entry.location1),
-									  add_location(entry.location2),
-									  entry.distance});
+			routes.push_back(Route{add_location(entry.location_A),
+								   add_location(entry.location_B),
+								   entry.distance});
 		}
 
 		/*
 		 * find shortest path through all locations
 		 */
+
+		// create a lookup table for distances of all routes
 		auto size = locations.size();
-		auto chart = std::vector<std::vector<Distance>>{size};
+		auto chart = std::vector<std::vector<Distance>>(size);
+
 		for(auto& entry : chart) {
 			entry = std::vector<Distance>(size);
 		}
 
-		// populate chart with routes
+		// log the distance for any given route between two locations
 		for(const auto& route : routes) {
-			chart[route.location1][route.location2]
-			= chart[route.location2][route.location1]
-			= route.distance;
+
+			auto& id1 = route.location_id1;
+			auto& id2 = route.location_id2;
+
+			chart[id1][id2] = chart[id2][id1] = route.distance;
 		}
 
 		auto itinerary = std::vector<LocationID>{locations.begin(), locations.end()};
 		auto min_distance = Distance{std::numeric_limits<Distance>::max()};
 
-		auto f = factorial(size);
-		auto limit = (f / size) * (size - 1);
+		// only a subset of all possible permutations of routes is relevant for us,
+		// this will allow us to return early from looping through the permutations
+		auto limit = (factorial(size) / size) * (size - 1);
 
-		do {
+		do {// inner_product is equal to acc += lambda(iter1, iter2) in a loop
 			auto tmp_distance = std::inner_product(itinerary.begin(),
 												   std::prev(itinerary.end()),
 												   std::next(itinerary.begin()),
@@ -100,9 +111,10 @@ int main() {
 
 			min_distance = std::min(min_distance, tmp_distance);
 
-		} while((limit--) > 0 && std::next_permutation(itinerary.begin(), itinerary.end()));
+		} while(((limit--) > 0) && std::next_permutation(itinerary.begin(), itinerary.end()));
 
 		std::cout << min_distance << std::endl;
+
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
 	}
