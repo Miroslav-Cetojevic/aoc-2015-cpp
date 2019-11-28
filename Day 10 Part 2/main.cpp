@@ -1,39 +1,41 @@
-#include <algorithm>
-#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include <boost/iterator/counting_iterator.hpp>
 
 template<typename T>
 struct Range {
-	boost::counting_iterator<T, boost::use_default, T> begin, end;
-	Range(T b, T e): begin(b), end(e) {}
+	boost::counting_iterator<T, boost::use_default, T> begin_, end_;
+	Range(T b, T e): begin_(b), end_(e) {}
+    auto begin() const { return begin_; }
+    auto end() const { return end_; }
 };
 
 int main() {
-	auto sequence = std::string{"1321131112"};
 
-	auto range = Range<std::size_t>{0, 50};
-	std::for_each(range.begin, range.end, [&sequence] (auto) {
+    auto seq = std::string{"1321131112"};
 
-		auto tmp = std::string{};
-		auto n = 0UL;
+    for(auto e : Range<unsigned>{0, 50}) {
 
-		for(auto i = 0UL, pos = (i + 1); i < sequence.size(); i = pos) {
-			pos = sequence.find_first_not_of(sequence[i], pos);
+        auto tmp = std::stringstream{};
 
-			if(pos != sequence.npos) { n = (pos - i); }
-			else { n = (sequence.size() - i); }
+        for(auto i = 0UL, pos = (i + 1); i < seq.length(); i = pos, pos = (i + 1)) {
 
-			tmp += ('0' + n);
-			tmp += sequence[i];
-		}
+            pos = seq.find_first_not_of(seq[i], pos);
 
-		sequence = tmp;
-	});
+            if (pos == seq.npos) {
+                pos = seq.length();
+            }
 
-	std::cout << sequence.size() << std::endl;
+            tmp << (pos - i) << seq[i];
 
-	return 0;
+        }
+
+        seq = tmp.str();
+    }
+
+    std::cout << seq.length() << std::endl;
+
+    return 0;
 }
