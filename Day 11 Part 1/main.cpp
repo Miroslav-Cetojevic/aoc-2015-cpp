@@ -29,7 +29,6 @@ class Reverse {
 template<typename P, typename A>
 constexpr auto increment_pwd(P& pwd, const A& alphabet) {
 
-	// todo: for_each(begin(v), find_if(begin(v), end(v), cond), f);?
 	for(auto& c : Reverse{pwd}) {
 
 		if(c != alphabet.back()) {
