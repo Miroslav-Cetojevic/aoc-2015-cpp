@@ -15,9 +15,8 @@ namespace std {
 	template<>
 	struct hash<Position> {
 		auto operator()(const Position& pos) const {
-			// encode x to the first 16 bits of the hash
-			// and y to the last 16 bits
-			return (pos.x << 16) + pos.y;
+			// encode the position in a 64bit hash
+			return (static_cast<std::uint64_t>(pos.x) << 32) | static_cast<std::uint64_t>(pos.y);
 		}
 	};
 }
