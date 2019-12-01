@@ -99,7 +99,7 @@ int main() {
 		Reindeer entry;
 
 		while(file >> entry) {
-			reindeers.emplace_back(entry);
+			reindeers.push_back(entry);
 		}
 
 		calculate_scores(reindeers, seconds);
