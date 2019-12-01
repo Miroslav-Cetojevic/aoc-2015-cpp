@@ -44,9 +44,6 @@ auto& operator>>(std::istream& in, SeatingPairEntry& entry) {
 	return in >> entry.left_person >> entry.score >> entry.right_person;
 }
 
-template<typename T>
-auto get_hash(T t) { return std::hash<T>{}(t); }
-
 namespace std {
 	template<>
 	struct hash<SeatingPair> {
