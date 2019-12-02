@@ -48,12 +48,12 @@ struct Properties {
 
 auto operator+(const Properties& lhs, const Properties& rhs) {
 
-	auto properties = Properties{};
+	auto new_properties = Properties{};
 
 	// element-wise addition of lhs and rhs
-	std::transform(lhs.begin(), lhs.end(), rhs.begin(), properties.begin(), std::plus{});
+	std::transform(lhs.begin(), lhs.end(), rhs.begin(), new_properties.begin(), std::plus{});
 
-	return properties;
+	return new_properties;
 }
 
 auto operator*(const std::uint64_t scalar, const Ingredient& ingredient) {
@@ -144,7 +144,11 @@ int main() {
 
 		auto baskets = std::vector<std::uint64_t>(ingredients.size());
 
-		const auto max_score = partition(baskets, ingredients, std::uint64_t{}, std::uint64_t{100}, std::uint64_t{});
+		const auto init_id = std::uint64_t{};
+		const auto spoons = std::uint64_t{100};
+		const auto init_score = std::uint64_t{};
+
+		const auto max_score = partition(baskets, ingredients, init_id, spoons, init_score);
 
 		std::cout << max_score << std::endl;
 
