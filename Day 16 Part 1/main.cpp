@@ -7,26 +7,22 @@
 #include <vector>
 
 struct Sue {
-	std::size_t id;
-	std::map<std::size_t, std::size_t> detectables;
+	unsigned id;
+	std::map<std::string, unsigned> clues;
 };
 
-struct Detectable {
-	std::size_t amount;
+struct Clue {
 	std::string name;
+	unsigned amount;
 };
 
-auto& operator>>(std::istream& in, Detectable& detectable) {
-	return in >> detectable.name >> detectable.amount;
+auto& operator>>(std::istream& in, Clue& clue) {
+	return in >> clue.name >> clue.amount;
 }
 
-template<typename T>
-auto get_hash(T t) { return std::hash<T>{}(t); }
-
 int main() {
-	std::ios_base::sync_with_stdio(false);
 
-	auto filename = std::string{"aunts.txt"};
+	const auto filename = std::string{"aunts.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
@@ -36,6 +32,7 @@ int main() {
 		auto ss = std::stringstream{};
 
 		std::string line;
+
 		while(std::getline(file, line)) {
 
 			ss.str(line);
@@ -44,31 +41,32 @@ int main() {
 
 			ss >> aunt.id;
 
-			Detectable detectable;
-			while(ss >> detectable) {
-				aunt.detectables[get_hash(detectable.name)] = detectable.amount;
+			Clue clue;
+
+			while(ss >> clue) {
+				aunt.clues[clue.name] = clue.amount;
 			}
 
 			ss.clear();
 
-			aunties.emplace_back(aunt);
+			aunties.push_back(aunt);
 		}
 
-		decltype(Sue::detectables) sue{
-			{get_hash(std::string{"children"}), 3},
-			{get_hash(std::string{"cats"}), 7},
-			{get_hash(std::string{"samoyeds"}), 2},
-			{get_hash(std::string{"pomeranians"}), 3},
-			{get_hash(std::string{"akitas"}), 0},
-			{get_hash(std::string{"vizslas"}), 0},
-			{get_hash(std::string{"goldfish"}), 5},
-			{get_hash(std::string{"trees"}), 3},
-			{get_hash(std::string{"cars"}), 2},
-			{get_hash(std::string{"perfumes"}), 1}
+		const decltype(Sue::clues) sue{
+			{"children", 3},
+			{"cats", 7},
+			{"samoyeds", 2},
+			{"pomeranians", 3},
+			{"akitas", 0},
+			{"vizslas", 0},
+			{"goldfish", 5},
+			{"trees", 3},
+			{"cars", 2},
+			{"perfumes", 1}
 		};
 
-		auto result = std::find_if(aunties.begin(), aunties.end(), [&sue] (auto aunt) {
-			return std::includes(sue.begin(), sue.end(), aunt.detectables.begin(), aunt.detectables.end());
+		const auto result = std::find_if(aunties.begin(), aunties.end(), [&sue] (auto aunt) {
+			return std::includes(sue.begin(), sue.end(), aunt.clues.begin(), aunt.clues.end());
 		});
 
 		std::cout << result->id << std::endl;
