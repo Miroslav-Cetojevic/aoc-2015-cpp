@@ -11,21 +11,30 @@
 #include <vector>
 
 struct Ingredient {
-	std::size_t id, calories;
-	std::ptrdiff_t capacity, durability, flavor, texture;
+	std::uint64_t id;
+	std::uint64_t calories;
+
+	std::int64_t capacity;
+	std::int64_t durability;
+	std::int64_t flavor;
+	std::int64_t texture;
 };
 
 auto& operator>>(std::istream& in, Ingredient& ingredient) {
-	static auto id = 0UL;
+
+	static decltype(ingredient.id) id = 0;
 	ingredient.id = id++;
 
-	std::string name;
-	return in >> name >> ingredient.capacity >> ingredient.durability
-			  >> ingredient.flavor >> ingredient.texture >> ingredient.calories;
+	std::string name; // to be discarded, as we will only use its id instead
+
+	in >> name >> ingredient.capacity >> ingredient.durability
+	   >> ingredient.flavor >> ingredient.texture >> ingredient.calories;
+
+	return in;
 }
 
 struct Properties {
-    std::array<std::ptrdiff_t, 5> data{};
+    std::array<std::int64_t, 5> data{};
 
     auto begin() { return data.begin(); }
     auto end() { return data.end(); }
@@ -35,47 +44,53 @@ struct Properties {
 
     auto& back() { return data.back(); }
 
-    auto& operator[](std::size_t n) { return data[n]; }
-    auto& operator[](std::size_t n) const { return data[n]; }
+    auto& operator[](std::uint64_t n) { return data[n]; }
+    auto& operator[](std::uint64_t n) const { return data[n]; }
 };
 
 auto operator+(const Properties& lhs, const Properties& rhs) {
-	auto P = Properties{};
-	std::transform(lhs.begin(), lhs.end(), rhs.begin(), P.begin(), std::plus{});
-	return P;
+
+	auto new_properties = Properties{};
+
+	// element-wise addition of lhs and rhs
+	std::transform(lhs.begin(), lhs.end(), rhs.begin(), new_properties.begin(), std::plus{});
+
+	return new_properties;
 }
 
-auto operator*(const std::size_t scalar, const Ingredient& ingredient) {
-	return Properties{scalar * ingredient.capacity,
-					  scalar * ingredient.durability,
-					  scalar * ingredient.flavor,
-					  scalar * ingredient.texture,
-					  scalar * ingredient.calories};
+auto operator*(const std::uint64_t scalar, const Ingredient& ingredient) {
+
+	const auto scalar_signed = static_cast<std::int64_t>(scalar);
+
+	return Properties{
+		scalar_signed * ingredient.capacity,
+		scalar_signed * ingredient.durability,
+		scalar_signed * ingredient.flavor,
+		scalar_signed * ingredient.texture,
+		scalar_signed * static_cast<std::int64_t>(ingredient.calories)
+	};
 }
 
-// this function is based on this SO answer: https://stackoverflow.com/a/22989846/699211
+// this function is based on this stackoverflow.com answer: https://stackoverflow.com/a/22989846/699211
 template<typename B, typename I, typename N>
-N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_left, N calories, N max_score) {
+auto partition(B& baskets, I& ingredients, N ingredient_id, N spoons_left, N calories, N max_score) -> N {
 
 	if(spoons_left > 0) {
 
-		if((ingredient_id + 1) < n_baskets) {
+		if((ingredient_id + 1) < baskets.size()) {
 
 			auto min_spoons = ((ingredient_id == 0) ? N{1} : baskets[ingredient_id-1]);
 
-			auto max_spoons = (spoons_left / 2);
+			auto max_spoons = (spoons_left / 2) + 1;
 
-			for(auto n_spoons = min_spoons; n_spoons <= max_spoons; ++n_spoons) {
+			for(auto n_spoons = min_spoons; n_spoons < max_spoons; ++n_spoons) {
+
+				const auto new_id = (ingredient_id + 1);
+				const auto new_spoons_left = (spoons_left - n_spoons);
 
 				baskets[ingredient_id] = n_spoons;
 
-				max_score = partition(baskets,
-									  n_baskets,
-									  ingredients,
-									  (ingredient_id + 1),
-									  (spoons_left - n_spoons),
-									  calories,
-									  max_score);
+				max_score = partition(baskets, ingredients, new_id, new_spoons_left, calories, max_score);
 			}
 
 		} else {
@@ -85,18 +100,25 @@ N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_l
 			auto tmp_baskets = baskets;
 
 			do {
-				auto properties = std::inner_product(tmp_baskets.begin(),
-													 tmp_baskets.end(),
-													 ingredients.begin(),
-													 Properties{},
-													 std::plus{},
-													 std::multiplies{});
+				const auto begin1 = tmp_baskets.begin();
+				const auto end1	  = tmp_baskets.end();
+				const auto begin2 = ingredients.begin();
+				const auto init	  = Properties{};
+				const auto op1	  = std::plus{};
+				const auto op2	  = std::multiplies{};
 
-				if(properties.back() == calories) {
+				auto new_properties = std::inner_product(begin1, end1, begin2, init, op1, op2);
 
-					auto tmp_score = std::accumulate(properties.begin(), std::prev(properties.end()), N{1}, [] (auto product, auto value) {
+				if(new_properties.back() == static_cast<std::int64_t>(calories)) {
+
+					const auto begin = new_properties.begin();
+					const auto end   = std::prev(new_properties.end()); // calories don't factor in the score
+					const auto init  = N{1};
+					const auto op	 = [] (auto product, auto value) {
 						return product *= ((value >= 0) ? value : 0);
-					});
+					};
+
+					auto tmp_score = std::accumulate(begin, end, init, op);
 
 					max_score = std::max(max_score, tmp_score);
 				}
@@ -109,9 +131,8 @@ N partition(B& baskets, N n_baskets, I& ingredients, N ingredient_id, N spoons_l
 }
 
 int main() {
-	std::ios_base::sync_with_stdio(false);
 
-	auto filename = std::string{"ingredients.txt"};
+	const auto filename = std::string{"ingredients.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
@@ -119,12 +140,19 @@ int main() {
 		auto ingredients = std::vector<Ingredient>{};
 
 		Ingredient ingredient;
+
 		while(file >> ingredient) {
 			ingredients.push_back(ingredient);
 		}
+
 		auto baskets = std::vector<std::size_t>(ingredients.size());
 
-		auto max_score = partition(baskets, baskets.size(), ingredients, 0UL, 100UL, 500UL, 0UL);
+		const auto init_id = std::uint64_t{};
+		const auto spoons = std::uint64_t{100};
+		const auto calories = std::uint64_t{500};
+		const auto init_score = std::uint64_t{};
+
+		const auto max_score = partition(baskets, ingredients, init_id, spoons, calories, init_score);
 
 		std::cout << max_score << std::endl;
 
