@@ -10,12 +10,6 @@
 #include <string>
 #include <vector>
 
-struct Stats {
-	std::uint64_t id;
-	std::uint64_t spoons_left;
-	std::uint64_t max_score;
-};
-
 struct Ingredient {
 	std::uint64_t id;
 	std::uint64_t calories;
