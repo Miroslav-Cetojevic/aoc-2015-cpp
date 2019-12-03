@@ -1,4 +1,6 @@
-// NOTE: this is a "power set" problem
+/*
+ * NOTE: this is a "power set" problem
+ */
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -7,56 +9,73 @@
 #include <string>
 #include <vector>
 
-int main() {
-	std::ios_base::sync_with_stdio(false);
+#include <boost/range/counting_range.hpp>
 
-	auto filename = std::string{"containers.txt"};
+int main() {
+
+	const auto filename = std::string{"containers.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto containers = std::vector<std::size_t>{};
+		auto containers = std::vector<std::uint64_t>{};
 
-		std::size_t value;
-		while(file >> value) { containers.push_back(value); }
+		std::uint64_t container;
+		while(file >> container) {
+			containers.push_back(container);
+		}
+
+		const auto target_volume = std::uint64_t{150};
+
+		const auto size = containers.size();
+
+		// the highest theoretical minimum
+		// is all the available containers
+		auto min_containers = size;
+
+		/*
+		 * NOTE: the following algorithm was adapted
+		 * from this stackoverflow.com answer:
+		 * https://stackoverflow.com/a/19891145/699211
+		 */
 
 		/* compute power set */
-		auto volume = 150UL;
-
-		auto min_containers = std::numeric_limits<std::size_t>::max();
-
-		auto size = containers.size();
-
-		auto powerset = std::vector<std::vector<std::size_t>>(1UL << size);
+		auto powerset = std::vector<std::vector<std::uint64_t>>(1 << size);
 
 		powerset[0] = {};
 
-		using NumContainers = std::size_t;
-		using Count = std::size_t;
+		using NumContainers = std::uint64_t;
+		using Count = std::uint64_t;
 
 		auto count_map = std::unordered_map<NumContainers, Count>{};
 
-		for(auto i = 0UL; i < size; ++i) {
+		for(const auto i : boost::counting_range({}, size)) {
 
-			auto subsize = 1UL << i; // doubling size of subset
+			const auto subsize = std::uint64_t{1} << i; // doubling size of subset
 
-			for(auto j = 0UL; j < subsize; ++j) {
+			for(const auto j : boost::counting_range({}, subsize)) {
 
-				auto& source = powerset[j];
+				const auto& source = powerset[j];
 
-				auto srcsize = source.size();
+				const auto srcsize = source.size();
 
-				auto& destination = powerset[subsize+j] = std::vector<std::size_t>(srcsize + 1);
+				auto& destination = powerset[subsize+j] = std::vector<std::uint64_t>(srcsize + 1);
 
-				for(auto k = 0UL; k < srcsize; ++k) { destination[k] = source[k]; }
+				for(const auto k : boost::counting_range({}, srcsize)) {
+					destination[k] = source[k];
+				}
 
 				destination[srcsize] = containers[i];
 
-				if(std::accumulate(destination.begin(), destination.end(), 0UL) == volume) {
+				const auto new_volume = std::accumulate(destination.begin(), destination.end(), std::uint64_t{});
 
-					++count_map[destination.size()];
+				if(new_volume == target_volume) {
 
-					min_containers = std::min(min_containers, destination.size());
+					const auto destsize = destination.size();
+
+					++count_map[destsize];
+
+					min_containers = std::min(min_containers, destsize);
 				}
 			}
 		}
