@@ -6,9 +6,13 @@
 #include <string>
 #include <vector>
 
+// std::include is used later in the code, which requires a sorted container,
+// and I found std::map to be a very convenient tool for it
+using Clues = std::map<std::string, unsigned>;
+
 struct Sue {
 	unsigned id;
-	std::map<std::string, unsigned> clues;
+	Clues clues;
 };
 
 struct Clue {
@@ -47,12 +51,12 @@ int main() {
 				aunt.clues[clue.name] = clue.amount;
 			}
 
-			ss.clear();
-
 			aunties.push_back(aunt);
+
+			ss.clear();
 		}
 
-		const decltype(Sue::clues) sue{
+		static const auto sue = Clues{
 			{"children", 3},
 			{"cats", 7},
 			{"samoyeds", 2},
@@ -65,11 +69,14 @@ int main() {
 			{"perfumes", 1}
 		};
 
-		const auto result = std::find_if(aunties.begin(), aunties.end(), [&sue] (auto aunt) {
+		const auto real_sue = std::find_if(aunties.begin(), aunties.end(), [] (auto aunt) {
 			return std::includes(sue.begin(), sue.end(), aunt.clues.begin(), aunt.clues.end());
 		});
 
-		std::cout << result->id << std::endl;
+		// if the input file wasn't guaranteed to have the result we are looking for,
+		// a comparison with the end-iterator would have been necessary before accessing
+		// the object, but since this is AoC, we do have the (implicit) guarantee
+		std::cout << real_sue->id << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
