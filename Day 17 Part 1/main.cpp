@@ -1,51 +1,69 @@
-// NOTE: this is a "power set" problem
+/*
+ * NOTE: this is a "power set" problem
+ */
 #include <fstream>
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <vector>
 
-int main() {
-	std::ios_base::sync_with_stdio(false);
+#include <boost/range/counting_range.hpp>
 
-	auto filename = std::string{"containers.txt"};
+int main() {
+
+	const auto filename = std::string{"containers.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto containers = std::vector<std::size_t>{};
+		auto containers = std::vector<std::uint64_t>{};
 
-		std::size_t value;
-		while(file >> value) { containers.push_back(value); }
+		std::uint64_t container;
+
+		while(file >> container) {
+			containers.push_back(container);
+		}
+
+		const auto target_volume = std::uint64_t{150};
+
+		auto count = std::uint64_t{};
+
+		const auto size = containers.size();
+
+		/*
+		 * NOTE: the following algorithm was adapted
+		 * from this stackoverflow.com answer:
+		 * https://stackoverflow.com/a/19891145/699211
+		 */
 
 		/* compute power set */
-		auto volume = 150UL;
-		auto count = 0UL;
-		auto size = containers.size();
+		auto powerset = std::vector<std::vector<std::uint64_t>>(1 << size);
 
-		auto powerset = std::vector<std::vector<std::size_t>>(1 << size);
+		powerset[0] = {};
 
-		powerset[0] = std::vector<std::size_t>{};
+		for(const auto i : boost::counting_range({}, size)) {
 
-		for(auto i = 0UL; i < size; ++i) {
+			const auto subsize = std::uint64_t{1} << i; // doubling size of subset
 
-			auto subsize = 1UL << i; // doubling size of subset
+			for(const auto j : boost::counting_range({}, subsize)) {
 
-			for(auto j = 0UL; j < subsize; ++j) {
+				const auto& source = powerset[j];
 
-				auto& source = powerset[j];
+				const auto srcsize = source.size();
 
-				auto srcsize = source.size();
+				auto& destination = powerset[subsize+j] = std::vector<std::uint64_t>(srcsize + 1);
 
-				auto& destination = powerset[subsize+j] = std::vector<std::size_t>(srcsize + 1);
-
-				for(auto k = 0UL; k < srcsize; ++k) { destination[k] = source[k]; }
+				for(const auto k : boost::counting_range({}, srcsize)) {
+					destination[k] = source[k];
+				}
 
 				destination[srcsize] = containers[i];
 
-				auto tmp_volume = std::accumulate(destination.begin(), destination.end(), 0UL);
+				const auto new_volume = std::accumulate(destination.begin(), destination.end(), std::uint64_t{});
 
-				if(tmp_volume == volume) { ++count; }
+				if(new_volume == target_volume) {
+					++count;
+				}
 			}
 		}
 
