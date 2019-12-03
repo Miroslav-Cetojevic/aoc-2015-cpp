@@ -47,6 +47,7 @@ int main() {
 		using NumContainers = std::uint64_t;
 		using Count = std::uint64_t;
 
+		// how many times can you have exactly n containers that contain the exact volume?
 		auto count_map = std::unordered_map<NumContainers, Count>{};
 
 		for(const auto i : boost::counting_range({}, size)) {
