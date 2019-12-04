@@ -6,6 +6,7 @@
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -72,8 +73,8 @@ auto operator*(const std::uint64_t scalar, const Ingredient& ingredient) {
 }
 
 // this function is based on this stackoverflow.com answer: https://stackoverflow.com/a/22989846/699211
-template<typename B, typename I, typename N>
-auto partition(B& baskets, I& ingredients, N ingredient_id, N spoons_left, N calories, N max_score) -> N {
+template<typename I, typename B, typename N>
+auto partition(I&& ingredients, B&& baskets, N ingredient_id, N spoons_left, N calories, N max_score) -> N {
 
 	if(spoons_left > 0) {
 
@@ -90,7 +91,7 @@ auto partition(B& baskets, I& ingredients, N ingredient_id, N spoons_left, N cal
 
 				baskets[ingredient_id] = n_spoons;
 
-				max_score = partition(baskets, ingredients, new_id, new_spoons_left, calories, max_score);
+				max_score = partition(ingredients, baskets, new_id, new_spoons_left, calories, max_score);
 			}
 
 		} else {
@@ -130,6 +131,14 @@ auto partition(B& baskets, I& ingredients, N ingredient_id, N spoons_left, N cal
 	return max_score;
 }
 
+template<typename T>
+auto get_vector_from_file(std::fstream& file) {
+	return std::vector<T>{
+		std::istream_iterator<T>{file},
+		std::istream_iterator<T>{}
+	};
+}
+
 int main() {
 
 	const auto filename = std::string{"ingredients.txt"};
@@ -137,13 +146,7 @@ int main() {
 
 	if(file.is_open()) {
 
-		auto ingredients = std::vector<Ingredient>{};
-
-		Ingredient ingredient;
-
-		while(file >> ingredient) {
-			ingredients.push_back(ingredient);
-		}
+		const auto ingredients = get_vector_from_file<Ingredient>(file);
 
 		auto baskets = std::vector<std::size_t>(ingredients.size());
 
@@ -152,7 +155,7 @@ int main() {
 		const auto calories = std::uint64_t{500};
 		const auto init_score = std::uint64_t{};
 
-		const auto max_score = partition(baskets, ingredients, init_id, spoons, calories, init_score);
+		const auto max_score = partition(ingredients, baskets, init_id, spoons, calories, init_score);
 
 		std::cout << max_score << std::endl;
 
