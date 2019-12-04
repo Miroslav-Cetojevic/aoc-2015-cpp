@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
+
 struct MoleculesEntry {
 	std::string input;
 	std::string replacement;
