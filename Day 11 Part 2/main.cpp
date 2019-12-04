@@ -4,32 +4,13 @@
 #include <string>
 #include <string_view>
 
-#include <boost/iterator/counting_iterator.hpp>
-
-template<typename T>
-class Range {
-	private:
-		boost::counting_iterator<T, boost::use_default, T> begin_, end_;
-	public:
-		Range(T b, T e): begin_(b), end_(e) {}
-		auto begin() const { return begin_; }
-		auto end() const { return end_; }
-};
-
-template<typename T>
-class Reverse {
-	private:
-		T* ptr;
-	public:
-		Reverse(T& container): ptr(&container) {}
-		auto begin() const { return ptr->rbegin(); }
-		auto end() const { return ptr->rend(); }
-};
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/counting_range.hpp>
 
 template<typename P, typename A>
 constexpr auto increment_pwd(P& pwd, const A& alphabet) {
 
-	for(auto& c : Reverse{pwd}) {
+	for(auto& c : boost::reversed_range{pwd}) {
 
 		if(c != alphabet.back()) {
 			const auto pos = std::find(alphabet.begin(), alphabet.end(), c);
@@ -70,7 +51,7 @@ constexpr auto has_three_straight(const P& pwd) {
 
 	auto pwdlen = pwd.length();
 
-	auto range = Range<decltype(pwdlen)>{2, pwdlen};
+	auto range = boost::counting_range<decltype(pwdlen)>(2, pwdlen);
 
 	return std::any_of(range.begin(), range.end(), [&pwd] (auto i) {
 		return ((pwd[i]-1) == pwd[i-1]) && ((pwd[i]-2) == pwd[i-2]);
