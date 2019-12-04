@@ -1,20 +1,19 @@
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 int main() {
 
-	auto filename = std::string{"list.txt"};
+	const auto filename = std::string{"list.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto list = std::string{};
-
-		file.seekg(0, std::ios::end);
-		list.resize(file.tellg());
-		file.seekg(0, std::ios::beg);
-		file.read(list.data(), list.size());
+		const auto list = std::string{
+			std::istreambuf_iterator<char>{file},
+			std::istreambuf_iterator<char>{}
+		};
 
 		auto encsum = unsigned{};
 		auto nlsum = encsum;
