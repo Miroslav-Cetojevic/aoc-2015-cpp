@@ -4,48 +4,31 @@
 #include <string>
 #include <string_view>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/counting_range.hpp>
 
-template<typename T>
-class Range {
-	private:
-		boost::counting_iterator<T, boost::use_default, T> begin_, end_;
-	public:
-		Range(T b, T e): begin_(b), end_(e) {}
-		auto begin() const { return begin_; }
-		auto end() const { return end_; }
-};
+constexpr auto first_letter = 'a';
+constexpr auto last_letter = 'z';
 
-template<typename T>
-class Reverse {
-	private:
-		T* ptr;
-	public:
-		Reverse(T& container): ptr(&container) {}
-		auto begin() const { return ptr->rbegin(); }
-		auto end() const { return ptr->rend(); }
-};
+template<typename P>
+constexpr auto increment_pwd(P& pwd) {
 
-template<typename P, typename A>
-constexpr auto increment_pwd(P& pwd, const A& alphabet) {
+	for(auto& c : boost::reversed_range{pwd}) {
 
-	for(auto& c : Reverse{pwd}) {
-
-		if(c != alphabet.back()) {
-			const auto pos = std::find(alphabet.begin(), alphabet.end(), c);
-			c = *pos + 1;
+		if(c != last_letter) {
+			++c;
 			break;
 		}
 
-		c = alphabet.front();
+		c = first_letter;
 	}
 }
 
-template<typename P, typename A>
-constexpr auto is_incrementable(const P& pwd, const A& alphabet) {
+template<typename P>
+constexpr auto is_incrementable(const P& pwd) {
 
-	const auto count = std::count_if(pwd.begin(), pwd.end(), [&alphabet] (const auto letter) {
-		return (letter == alphabet.back());
+	const auto count = std::count_if(pwd.begin(), pwd.end(), [] (const auto letter) {
+		return (letter == last_letter);
 	});
 
 	const auto size = pwd.size();
@@ -70,7 +53,7 @@ constexpr auto has_three_straight(const P& pwd) {
 
 	auto pwdlen = pwd.length();
 
-	auto range = Range<decltype(pwdlen)>{2, pwdlen};
+	const auto range = boost::counting_range<decltype(pwdlen)>(2, pwdlen);
 
 	return std::any_of(range.begin(), range.end(), [&pwd] (auto i) {
 		return ((pwd[i]-1) == pwd[i-1]) && ((pwd[i]-2) == pwd[i-2]);
@@ -90,13 +73,11 @@ constexpr auto has_banned_letter(const P& pwd) {
 template<typename P>
 constexpr auto next_pwd(P& pwd) {
 
-	const auto alphabet = std::string_view{"abcdefghijklmnopqrstuvwxyz"};
-
 	auto not_secure = true;
 
-	while(not_secure && is_incrementable(pwd, alphabet)) {
+	while(not_secure && is_incrementable(pwd)) {
 
-		increment_pwd(pwd, alphabet);
+		increment_pwd(pwd);
 
 		not_secure = (has_banned_letter(pwd) || !(has_two_pairs(pwd) && has_three_straight(pwd)));
 
