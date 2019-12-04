@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/counting_range.hpp>
 
 using Location = std::string;
 using LocationID = unsigned;
@@ -29,18 +29,8 @@ auto& operator>>(std::istream& in, RouteEntry& entry) {
 }
 
 template<typename T>
-class Range {
-	private:
-		boost::counting_iterator<T, boost::use_default, T> begin_, end_;
-	public:
-		Range(T b, T e): begin_(b), end_(e) {}
-		auto begin() const { return begin_; }
-		auto end() const { return end_; }
-};
-
-template<typename T>
 auto factorial(T n) {
-	const auto range = Range<T>{2, (n + 1)};
+	const auto range = boost::counting_range<T>(2, (n + 1));
 	return std::accumulate(range.begin(), range.end(), T{1}, std::multiplies{});
 }
 
@@ -85,12 +75,15 @@ int main() {
 		};
 
 		auto routes = std::vector<Route>{};
-		auto entry = RouteEntry{};
+
+		RouteEntry entry;
 
 		while(file >> entry) {
-			routes.push_back(Route{add_location(entry.location_A),
-								   add_location(entry.location_B),
-								   entry.distance});
+			routes.push_back({
+				add_location(entry.location_A),
+				add_location(entry.location_B),
+				entry.distance
+			});
 		}
 
 		// ========================================
