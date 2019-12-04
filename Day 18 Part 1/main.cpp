@@ -24,8 +24,6 @@ int main() {
 
 		auto grid = std::array<std::uint64_t, gridsize>{};
 
-		std::string line;
-
 		const auto index = [gridlen] (auto row, auto col) {
 			return (row * gridlen + col);
 		};
@@ -35,6 +33,8 @@ int main() {
 			{'.', 0},
 			{'#', 1}
 		};
+
+		std::string line;
 
 		for(auto row = std::uint64_t{1}; std::getline(file, line); ++row) {
 
