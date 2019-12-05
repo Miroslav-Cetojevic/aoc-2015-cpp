@@ -52,7 +52,6 @@
  * count all the molecules in the medicine and subtract the ones that serve as `(,)`
  * using the formula as described above.
  */
-#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <iterator>
