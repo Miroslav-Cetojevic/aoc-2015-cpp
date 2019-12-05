@@ -12,16 +12,16 @@ int main() {
 
 	const auto total_presents = 33100000;
 	const auto n_presents = 10;
-	const auto n_houses = (total_presents / n_presents);
+	const auto total_houses = (total_presents / n_presents);
 
 	// array with 3 mil elements will smash the stack, so vector is used instead
 	// every house has at least 10 presents because the first elf visits them all
-	auto houses = std::vector<std::size_t>(n_houses, n_presents);
+	auto houses = std::vector(total_houses, n_presents);
 
 	// elf_id is one-based, but house_id is zero-based because it's used to access the vector
-	for(const auto elf_id : boost::counting_range(2, (n_houses + 1))) {
+	for(const auto elf_id : boost::counting_range(2, (total_houses + 1))) {
 
-		for(auto house_id = (elf_id - 1); house_id < n_houses; house_id += elf_id) {
+		for(auto house_id = (elf_id - 1); house_id < total_houses; house_id += elf_id) {
 
 			houses[house_id] += (elf_id * n_presents);
 		}
