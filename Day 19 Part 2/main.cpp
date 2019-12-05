@@ -48,7 +48,7 @@
  * - X(X,X) => X is expressed as `6 - 2 - 2 - 1 = 1 step`
  * - X(X,X,X) => X is expressed as `8 - 2 - 4 - 1 = 1 step`
  *
- * Once the those observations are understood, the implementation becomes rather simple:
+ * Once those observations are understood, the implementation becomes rather simple:
  * count all the molecules in the medicine and subtract the ones that serve as `(,)`
  * using the formula as described above.
  */
@@ -56,6 +56,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -98,7 +99,7 @@ int main() {
 
 			for(const auto& molecule : molecules_set) {
 
-				for(auto pos = output.find(molecule); pos != output.npos; pos = output.find(molecule)) {
+				for(auto pos = output.rfind(molecule); pos != output.npos; pos = output.rfind(molecule)) {
 					output.erase(pos, molecule.size());
 				}
 			}
@@ -106,6 +107,10 @@ int main() {
 
 		// register the last remaining molecules
 		molecules_set.insert(output_molecules.begin(), output_molecules.end());
+
+		// we have all the strings we need, now we can enjoy the view(s)
+		auto view_medicine = std::string_view{medicine};
+		const auto view_set = std::unordered_set<std::string_view>{molecules_set.begin(), molecules_set.end()};
 
 		auto sum_molecules = std::int64_t{};
 		auto sum_rn_ar = std::int64_t{};
@@ -115,9 +120,10 @@ int main() {
 		// to count the molecules in a single pass
 		for(auto i = medicine.size(); i > 0; --i) {
 
-			const auto molecule = molecules_set.find(medicine.substr(i, medicine.size() - i));
+			const auto molecule = view_set.find(view_medicine.substr(i, (medicine.size() - i)));
 
-			const auto found_molecule = (molecule != molecules_set.end());
+			const auto found_molecule = (molecule != view_set.end());
+
 			if(found_molecule) {
 
 				if(*molecule == Rn || *molecule == Ar) {
@@ -128,11 +134,11 @@ int main() {
 
 				++sum_molecules;
 
-				medicine.erase(i, molecule->size());
+				view_medicine.remove_suffix(molecule->size());
 			}
 		}
 
-		auto result = (sum_molecules - sum_rn_ar - (2 * sum_y) - 1);
+		const auto result = (sum_molecules - sum_rn_ar - (2 * sum_y) - 1);
 
 		std::cout << result << std::endl;
 
