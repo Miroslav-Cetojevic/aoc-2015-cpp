@@ -57,7 +57,7 @@ auto get_rings() {
 			if(selector[i] == Bool::True) {
 
 				// the vectors containing the ring combinations must not exceed k elements
-				auto fillable = std::find_if(ring_combos.begin(), ring_combos.end(), [k] (const auto combo) {
+				const auto fillable = std::find_if(ring_combos.begin(), ring_combos.end(), [k] (const auto combo) {
 					return combo.size() < k;
 				});
 
