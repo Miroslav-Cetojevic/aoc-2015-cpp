@@ -74,9 +74,9 @@ auto get_rings() {
 
 int main() {
 
-	auto weapons = std::vector<Item>{{8,4,0}, {10,5,0}, {25,6,0}, {40,7,0}, {74,8,0}};
-	auto armors = std::vector<Item>{{}, {13,0,1}, {31,0,2}, {53,0,3}, {75,0,4}, {102,0,5}};
-	auto rings = get_rings();
+	const auto weapons = std::vector<Item>{{8,4,0}, {10,5,0}, {25,6,0}, {40,7,0}, {74,8,0}};
+	const auto armors = std::vector<Item>{{}, {13,0,1}, {31,0,2}, {53,0,3}, {75,0,4}, {102,0,5}};
+	const auto rings = get_rings();
 
 	auto min_gold = std::numeric_limits<decltype(Item::price)>::max();
 
