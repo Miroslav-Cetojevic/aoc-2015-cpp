@@ -2,40 +2,48 @@
 #include <iostream>
 #include <vector>
 
-// ========== Entities ========== //
+// ========
+// Entities
+// ========
+
 struct Hero {
-	std::ptrdiff_t health;
-	std::size_t mana;
-	std::size_t armor;
+	std::int64_t health;
+	std::uint64_t mana;
+	std::uint64_t armor;
 };
 
 struct Boss {
-	std::ptrdiff_t health;
-	std::size_t damage;
+	std::int64_t health;
+	std::uint64_t damage;
 };
 
-// ========== Spells & Effects =========== //
+// ================
+// Spells & Effects
+// ================
+
+// need to forward declare these structs
+// so I can use them for the function pointer
 struct GameState;
 struct Page;
 using DoMagic = void (*) (GameState&, Page&);
 
 struct Effect {
 	DoMagic apply;
-	std::ptrdiff_t value;
-	std::size_t turns_max;
-	std::size_t turns_left;
+	std::int64_t value;
+	std::uint64_t turns_max;
+	std::uint64_t turns_left;
 };
 
 struct Spell {
 	DoMagic cast;
-	std::size_t cost;
-	std::size_t value;
+	std::uint64_t cost;
+	std::uint64_t value;
 };
 
 struct Page {
 	Effect effect;
 	Spell spell;
-	std::size_t id;
+	std::uint64_t id;
 };
 
 using Spellbook = std::vector<Page>;
@@ -43,92 +51,107 @@ struct GameState {
 	Hero hero;
 	Boss boss;
 	Spellbook spellbook;
-	std::size_t page_no;
-	std::size_t mana_spent;
+	std::uint64_t current_page;
+	std::uint64_t mana_spent;
 };
 
-template<typename S, typename M>
-auto subtract(S&& subtrahend, M&& minuend) {
-	subtrahend -= minuend;
+auto subtract_mana(GameState& state, const Page& page) {
+	state.hero.mana -= page.spell.cost;
 }
 
-template<typename S, typename A>
-auto add(S&& summand, A&& addend) {
-	summand += addend;
+auto subtract_boss_health(GameState& state, const Page& page) {
+	state.boss.health -= page.spell.value;
 }
 
-auto calc_mana_spent(GameState& state, Page& page) {
-	add(state.mana_spent, page.spell.cost);
+auto calc_mana_spent(GameState& state, const Page& page) {
+	state.mana_spent += page.spell.cost;
 }
 
 auto init_effect(GameState& state, Page& page) {
-	subtract(state.hero.mana, page.spell.cost);
+	subtract_mana(state, page);
 	page.effect.turns_left = page.effect.turns_max;
 }
 
-auto cast_missile(GameState& state, Page& page) {
-	subtract(state.hero.mana, page.spell.cost);
-	subtract(state.boss.health, page.spell.value);
+auto apply_immediate_effects(GameState& state, const Page& page) {
+	subtract_mana(state, page);
+	subtract_boss_health(state, page);
 	calc_mana_spent(state, page);
 }
 
+auto cast_missile(GameState& state, Page& page) {
+	apply_immediate_effects(state, page);
+}
+
 auto cast_drain(GameState& state, Page& page) {
-	subtract(state.hero.mana, page.spell.cost);
-	subtract(state.boss.health, page.spell.value);
-	add(state.hero.health, page.spell.value);
+	apply_immediate_effects(state, page);
+	state.hero.health += page.spell.value;
+}
+
+auto activate_effect(GameState& state, Page& page) {
+	init_effect(state, page);
 	calc_mana_spent(state, page);
 }
 
 auto cast_poison(GameState& state, Page& page) {
-	init_effect(state, page);
-	calc_mana_spent(state, page);
+	activate_effect(state, page);
 }
 
 auto cast_recharge(GameState& state, Page& page) {
-	init_effect(state, page);
-	calc_mana_spent(state, page);
+	activate_effect(state, page);
 }
 
 auto cast_shield(GameState& state, Page& page) {
-	init_effect(state, page);
+	activate_effect(state, page);
 	state.hero.armor = page.spell.value;
-	calc_mana_spent(state, page);
 }
 
 auto apply_missile(GameState&, Page&) {}
 auto apply_drain(GameState&, Page&) {}
 
-auto apply_poison(GameState& state, Page& page) {
+template<typename F>
+auto apply_effect(GameState& state, Page& page, F effect) {
 	if(page.effect.turns_left > 0) {
-		subtract(state.boss.health, page.effect.value);
 		--(page.effect.turns_left);
+		effect(state, page);
 	}
+}
+
+auto apply_poison(GameState& state, Page& page) {
+	apply_effect(state, page, [] (auto& state, auto& page) {
+		state.boss.health -= page.effect.value;
+	});
 }
 
 auto apply_recharge(GameState& state, Page& page) {
-	if(page.effect.turns_left > 0) {
-		add(state.hero.mana, page.effect.value);
-		--(page.effect.turns_left);
-	}
+	apply_effect(state, page, [] (auto& state, auto& page) {
+		state.hero.mana += page.effect.value;
+	});
 }
 
 auto apply_shield(GameState& state, Page& page) {
-	if(page.effect.turns_left > 0) {
-		--(page.effect.turns_left);
+	apply_effect(state, page, [] (auto& state, auto& page) {
 		if(page.effect.turns_left == 0) {
 			state.hero.armor = 0;
 		}
-	}
+	});
 }
 
 auto boss_attack(GameState& state) {
-	auto boss_damage = (state.hero.armor < state.boss.damage) ? (state.boss.damage - state.hero.armor) : 1;
-	subtract(state.hero.health, boss_damage);
+	const auto boss_dmg = state.boss.damage;
+	const auto hero_ac = state.hero.armor;
+
+	const auto boss_real_dmg = (hero_ac < boss_dmg) ? (boss_dmg - hero_ac) : 1;
+
+	state.hero.health -= boss_real_dmg;
 }
+
+// ========
+// The Game
+// ========
 
 int main() {
 
-	auto spellbook = Spellbook{
+	const auto spellbook = Spellbook{
 		{{apply_missile, 0, 0, 0}, {cast_missile, 53, 4}, 0},
 		{{apply_drain, 0, 0, 0}, {cast_drain, 73, 2}, 1},
 		{{apply_shield, 0, 6, 0}, {cast_shield, 113, 7}, 2},
@@ -140,41 +163,52 @@ int main() {
 	auto boss = Boss{55, 8};
 
 	auto states = std::vector<GameState>{{hero, boss, spellbook, 0, 0}};
-	auto least_mana = 0UL;
+	auto least_mana = std::numeric_limits<decltype(hero.mana)>::max();
 
-	auto save_state = [&states] (auto& state) {
+	const auto save_state = [&states] (auto& state) {
 		// each new state means re-reading the spellbook from the beginning
-		state.page_no = 0;
+		state.current_page = 0;
 		states.push_back(state);
 	};
 
-	auto delete_state = [&states] { states.pop_back(); };
+	const auto delete_state = [&states] () {
+		states.pop_back();
+	};
 
-	auto apply_effects = [] (auto& state) {
+	const auto apply_effects = [] (auto& state) {
 		for(auto& page : state.spellbook) {
 			page.effect.apply(state, page);
 		}
 	};
 
-	auto has_won = [] (auto& state) { return (state.boss.health <= 0); };
-
-	auto has_lost = [] (auto& state) { return (state.hero.health <= 0); };
-
-	auto end_of_spellbook = [] (auto& state) { return (state.page_no == state.spellbook.size()); };
-
-	auto get_least_mana = [least_mana, &delete_state] (auto& state) {
-		// a victory has been attained, the last state is not needed anymore
-		delete_state();
-		return ((least_mana > 0) ? std::min(least_mana, state.mana_spent) : state.mana_spent);
+	const auto has_won = [] (const auto& state) {
+		return (state.boss.health <= 0);
 	};
 
+	const auto has_lost = [] (const auto& state) {
+		return (state.hero.health <= 0);
+	};
 
+	const auto end_of_spellbook = [] (const auto& state) {
+		return (state.current_page == state.spellbook.size());
+	};
+
+	const auto get_least_mana = [least_mana, &delete_state] (const auto& state) {
+		// a victory has been attained, the last state is not needed anymore
+		delete_state();
+		// the state argument will be a reference to the copy of the state
+		// that we just deleted, so it's safe to refer to it
+		return std::min(least_mana, state.mana_spent);
+	};
 
 	// each iteration (and thus each state) represents two turns played
 	do {
 		auto state = GameState(states.back());
 
-		/* hero's turn */
+		// ===========
+		// hero's turn
+		// ===========
+
 		apply_effects(state);
 
 		if(has_won(state)) {
@@ -188,23 +222,31 @@ int main() {
 			continue;
 		}
 
-		auto eligible_spell = std::find_if((state.spellbook.begin() + state.page_no),
-										   state.spellbook.end(),
-										   [&state, least_mana] (auto& page) {
-			auto better_solution_exists = (least_mana > 0) && ((state.mana_spent + page.spell.cost) >= least_mana);
-			auto is_spell_castable = (page.effect.turns_left == 0) && (state.hero.mana >= page.spell.cost);
+		const auto begin = state.spellbook.begin() + state.current_page;
+		const auto end   = state.spellbook.end();
 
-			return !better_solution_exists && is_spell_castable;
-		});
+		const auto check = [&state, least_mana] (auto& page) {
+			const auto mana_spent = state.mana_spent;
+			const auto spell_cost = page.spell.cost;
+			const auto turns_left = page.effect.turns_left;
+			const auto hero_mana  = state.hero.mana;
 
-		auto has_castable_spell = (eligible_spell != state.spellbook.end());
+			const auto reduces_mana_cost = (least_mana > 0) && ((mana_spent + spell_cost) >= least_mana);
+			const auto is_spell_castable = (turns_left == 0) && (hero_mana >= spell_cost);
+
+			return !reduces_mana_cost && is_spell_castable;
+		};
+
+		const auto eligible_spell = std::find_if(begin, end, check);
+
+		const auto has_castable_spell = (eligible_spell != state.spellbook.end());
 
 		if(has_castable_spell) {
 			// the hero attacks
 			eligible_spell->spell.cast(state, *eligible_spell);
 			// if we return to this state later on, the hero may only cast the next spell,
 			// because casting any of the previous ones will simply result in an already visited scenario
-			++(states.back().page_no);
+			++(states.back().current_page);
 		}
 
 		// no spells were cast either because
@@ -220,7 +262,10 @@ int main() {
 			continue;
 		}
 
-		/* boss' turn */
+		// ==========
+		// boss' turn
+		// ==========
+
 		apply_effects(state);
 
 		if(has_won(state)) {
