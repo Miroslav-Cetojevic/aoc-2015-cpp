@@ -1,10 +1,10 @@
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
 
 struct MoleculesEntry {
 	std::string input;
@@ -15,50 +15,63 @@ auto& operator>>(std::istream& in, MoleculesEntry& entry) {
 	return in >> entry.input >> entry.replacement;
 }
 
-int main() {
-	std::ios_base::sync_with_stdio(false);
+template<typename T>
+auto get_map_from_file(std::fstream& file) {
 
-	auto filename = std::string{"molecules.txt"};
+	// store all possible output molecules for each input molecule
+	auto contents = std::unordered_map<std::string, std::vector<std::string>>{};
+
+	T entry;
+
+	while(file >> entry) {
+		contents[entry.input].push_back(entry.replacement);
+	}
+
+	return contents;
+}
+
+int main() {
+
+	const auto filename = std::string{"molecules.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto replacements = std::unordered_map<std::string, std::vector<std::string>>{};
+		const auto medicine = *(std::istream_iterator<std::string>{file});
 
-		std::string medicine;
-		file >> medicine;
+		const auto replacements = get_map_from_file<MoleculesEntry>(file);
 
-		MoleculesEntry entry;
-		while(file >> entry) {
-			replacements[entry.input].push_back(entry.replacement);
-		}
+		auto new_medicines = std::unordered_set<std::string>{};
 
-		auto new_molecules = std::unordered_set<std::string>{};
+		const auto med_size = medicine.size();
 
-		auto med_size = medicine.size();
+		for(const auto& replacement : replacements) {
 
-		for(const auto& mapping : replacements) {
+			const auto& input_molecule = replacement.first;
 
-			auto& input = mapping.first;
+			const auto input_size = input_molecule.size();
 
-			auto& possible_outputs = mapping.second;
+			for(auto i = std::uint64_t{}; i < med_size; ++i) {
 
-			const auto input_size = input.size();
+				const auto pos = medicine.find(input_molecule, i);
 
-			for(auto i = 0UL; i < med_size; ++i) {
-
-				const auto pos = medicine.find(input, i);
-
+				// if the medicine contains one of the inputs from the replacements map (as keys),
+				// we can now start replacing the input with its possible outputs, creating the
+				// new medicine along the way
 				if(pos != medicine.npos) {
 
-					for(const auto& molecule : possible_outputs) {
+					const auto& output_molecules = replacement.second;
 
-						const auto replacement = medicine.substr(0, pos)
-												 + molecule
-												 + medicine.substr(pos + input_size,
-																   med_size - input_size);
+					for(const auto& molecule : output_molecules) {
 
-						new_molecules.insert(replacement);
+						const auto first = (pos + input_size);
+						const auto last = (med_size - input_size);
+
+						const auto new_molecule = medicine.substr(0, pos)
+												  + molecule
+												  + medicine.substr(first, last);
+
+						new_medicines.insert(new_molecule);
 
 						i = (pos + input_size - 1);
 					}
@@ -66,7 +79,7 @@ int main() {
 			}
 		}
 
-		std::cout << new_molecules.size() << std::endl;
+		std::cout << new_medicines.size() << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"" << std::endl;
