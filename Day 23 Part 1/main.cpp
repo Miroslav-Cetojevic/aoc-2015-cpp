@@ -94,8 +94,8 @@ int main() {
 		const auto b = std::string{"b"};
 
 		auto registers = std::unordered_map<std::string, Register>{
-			{a, 0},
-			{b, 0}
+			{a, {}},
+			{b, {}}
 		};
 
 		using Reader = void (*) (std::stringstream&, Instruction&);
