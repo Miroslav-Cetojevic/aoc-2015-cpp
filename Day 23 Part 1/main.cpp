@@ -5,118 +5,148 @@
 #include <unordered_map>
 #include <vector>
 
-struct Register {
-	std::string name;
-	std::size_t value;
-};
+struct Instruction; // forward declaration
 
-using Function = bool (*) (Register&);
+using Register = std::uint64_t;
+using Offset = std::int64_t;
+using Command = Offset (*) (Register&, const Instruction&);
 
 struct Instruction {
-	Function execute;
+	Command execute;
 	std::string register_;
-	std::ptrdiff_t offset;
+	Offset offset;
 };
 
-auto hlf(Register& r) {
-	r.value /= 2;
-	return true;
+auto hlf(Register& r, const Instruction& instruction) {
+	r /= 2;
+	return instruction.offset;
 }
 
-auto tpl(Register& r) {
-	r.value *= 3;
-	return true;
+auto tpl(Register& r, const Instruction& instruction) {
+	r *= 3;
+	return instruction.offset;
 }
 
-auto inc(Register& r) {
-	++r.value;
-	return true;
+auto inc(Register& r, const Instruction& instruction) {
+	++r;
+	return instruction.offset;
 }
 
-auto jmp(Register&) { return true; }
+auto jmp(Register&, const Instruction& instruction) {
+	return instruction.offset;
+}
 
-auto jie(Register& r) { return ((r.value % 2) == 0); }
+template<typename P>
+auto get_offset(Register r, const Instruction& instruction, P predicate) {
+	return (predicate(r) ? instruction.offset : 1);
+}
 
-auto jio(Register& r) { return (r.value == 1); }
+auto jie(Register& r, const Instruction& instruction) {
+	return get_offset(r, instruction, [] (auto r) {
+		return ((r % 2) == 0);
+	});
+}
 
+auto jio(Register& r, const Instruction& instruction) {
+	return get_offset(r, instruction, [] (auto r) {
+		return (r == 1);
+	});
+}
+
+auto read_stream_jmp(std::stringstream& stream, Instruction& instruction) {
+	stream >> instruction.offset;
+}
+
+auto read_stream_jix(std::stringstream& stream, Instruction& instruction) {
+	stream >> instruction.register_
+		   >> instruction.offset;
+}
+
+auto read_stream_reg(std::stringstream& stream, Instruction& instruction) {
+	stream >> instruction.register_;
+	instruction.offset = 1;
+}
 
 int main() {
-	std::ios_base::sync_with_stdio(false);
 
-	auto filename = std::string{"instructions.txt"};
+	const auto filename = std::string{"instructions.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto shlf = std::string{"hlf"};
-		auto stpl = std::string{"tpl"};
-		auto sinc = std::string{"inc"};
-		auto sjmp = std::string{"jmp"};
-		auto sjie = std::string{"jie"};
-		auto sjio = std::string{"jio"};
+		const auto strhlf = std::string{"hlf"};
+		const auto strtpl = std::string{"tpl"};
+		const auto strinc = std::string{"inc"};
+		const auto strjmp = std::string{"jmp"};
+		const auto strjie = std::string{"jie"};
+		const auto strjio = std::string{"jio"};
 
-		auto functions = std::unordered_map<std::string, Function>{
-			{shlf, hlf},
-			{stpl, tpl},
-			{sinc, inc},
-			{sjmp, jmp},
-			{sjie, jie},
-			{sjio, jio}
+		auto commands = std::unordered_map<std::string, Command>{
+			{strhlf, hlf},
+			{strtpl, tpl},
+			{strinc, inc},
+			{strjmp, jmp},
+			{strjie, jie},
+			{strjio, jio}
 		};
 
-		auto a = std::string{"a"};
-		auto b = std::string{"b"};
+		const auto a = std::string{"a"};
+		const auto b = std::string{"b"};
 
-		auto registers = std::unordered_map<std::string, Register> {
-			{a, Register{a, 0}},
-			{b, Register{b, 0}}
+		auto registers = std::unordered_map<std::string, Register>{
+			{a, 0},
+			{b, 0}
+		};
+
+		using Reader = void (*) (std::stringstream&, Instruction&);
+		auto stream_readers = std::unordered_map<std::string, Reader>{
+			{strhlf, read_stream_reg},
+			{strtpl, read_stream_reg},
+			{strinc, read_stream_reg},
+			{strjmp, read_stream_jmp},
+			{strjie, read_stream_jix},
+			{strjio, read_stream_jix}
 		};
 
 		auto instructions = std::vector<Instruction>{};
 
-		auto ss = std::stringstream{};
+		auto stream = std::stringstream{};
 
 		std::string line;
-		std::string scmd;
-		std::string reg;
-		std::ptrdiff_t val;
+		std::string strcmd;
 
 		while(std::getline(file, line)) {
 
-			ss.str(line);
+			stream.str(line);
 
-			ss >> scmd;
+			stream >> strcmd;
 
-			auto cmd = functions[scmd];
+			instructions.push_back({});
 
-			if((scmd == sinc) || (scmd == stpl) || (scmd == shlf)) {
-				ss >> reg;
-				instructions.emplace_back(Instruction{cmd, reg, 1});
-			} else if(scmd == sjmp) {
-				ss >> val;
-				instructions.emplace_back(Instruction{cmd, {}, val});
-			} else {
-				// it's either jio or jie
-				ss >> reg >> val;
-				instructions.emplace_back(Instruction{cmd, reg, val});
-			}
+			auto& instruction = instructions.back();
 
-			ss.clear();
+			instruction.execute = commands[strcmd];
+
+			// read instructions from stream
+			stream_readers[strcmd](stream, instruction);
+
+			stream.clear();
 		}
 
-		auto run_cmd = [&instructions, &registers] (auto index) {
-			auto& instruction = instructions[index];
+		const auto execute_instruction = [&instructions, &registers] (auto index) {
+			const auto& instruction = instructions[index];
 
 			auto& register_ = registers[instruction.register_];
 
-			auto offset = ((instruction.execute(register_)) ? instruction.offset : 1);
+			const auto offset = instruction.execute(register_, instruction);
 
 			return offset;
 		};
 
-		for(auto index = 0UL; index < instructions.size(); index += run_cmd(index));
+		// run instructions
+		for(decltype(instructions.size()) index = 0; index < instructions.size(); index += execute_instruction(index));
 
-		std::cout << registers[b].value << std::endl;
+		std::cout << registers[b] << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
