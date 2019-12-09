@@ -60,6 +60,9 @@
 #include <unordered_set>
 #include <vector>
 
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/irange.hpp>
+
 struct MoleculesEntry {
 	std::string atom;
 	std::string molecule;
@@ -116,11 +119,14 @@ int main() {
 		auto sum_rn_ar = std::int64_t{};
 		auto sum_y = std::int64_t{};
 
-		// going backwards through the medicine allows us
-		// to count the molecules in a single pass
-		for(auto i = medicine.size(); i > 0; --i) {
+		const auto medsize = view_medicine.size();
 
-			const auto molecule = view_set.find(view_medicine.substr(i, (medicine.size() - i)));
+		const auto reversed_range = boost::irange(medsize) | boost::adaptors::reversed;
+
+		// going backwards through the medicine allows us to count the molecules in a single pass
+		for(const auto i : reversed_range) {
+
+			const auto molecule = view_set.find(view_medicine.substr(i, (medsize - i)));
 
 			const auto found_molecule = (molecule != view_set.end());
 
