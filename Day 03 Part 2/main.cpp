@@ -1,69 +1,71 @@
+#include <complex>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <limits>
+#include <unordered_map>
 
-#include "unordered_map.hpp"
+using int32 = std::int32_t;
+using uint64 = std::uint64_t;
 
-struct Position {
-	int x, y;
-};
-
-auto operator==(const Position& lhs, const Position& rhs) {
-	return (lhs.x == rhs.x) && (lhs.y == rhs.y);
-}
+// std::complex gives us the x/y coordinates
+// through real()/imag() and also operator+=()
+// for free
+using Position = std::complex<int32>;
 
 namespace std {
 	template<>
-	struct hash<Position> {
+	struct hash<Position>{
 		auto operator()(const Position& pos) const {
 			// encode the position in a 64bit hash
-			return (static_cast<std::uint64_t>(pos.x) << 32) | static_cast<std::uint64_t>(pos.y);
+			const auto x = static_cast<uint64>(pos.real());
+			const auto y = static_cast<uint64>(pos.imag());
+			return x + (y << std::numeric_limits<int32>::digits);
 		}
 	};
 }
 
-template<typename P, typename D, typename H>
-auto move(P& pos, D direction, H& houses) {
-
-	constexpr auto NORTH = '^';
-	constexpr auto WEST  = '>';
-	constexpr auto SOUTH = 'v';
-	constexpr auto EAST  = '<';
-
-	switch(direction) {
-		case NORTH : ++pos.y; break;
-		case WEST  : ++pos.x; break;
-		case SOUTH : --pos.y; break;
-		case EAST  : --pos.x; break;
-		default: std::cerr << "Crap, something went wrong!" << std::endl;
-	}
-
-	++houses[pos];
-}
+template<typename Iterator>
+struct Range{
+private:
+	Iterator m_begin, m_end;
+public:
+	Range(Iterator first, Iterator last) : m_begin(first), m_end(last) {}
+	auto begin() const { return m_begin; }
+	auto end() const { return m_end; }
+};
 
 int main() {
 
-	auto filename = std::string{"directions.txt"};
+	const auto filename = std::string{"directions.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		// a map allows me to easily track how many
-		// times a particular house has been visited
-		auto houses = ska::unordered_map<Position, int>{};
+		const auto directions = std::unordered_map<char, Position>{
+			{'^', {0, 1}},
+			{'>', {1, 0}},
+			{'v', {0, -1}},
+			{'<', {-1, 0}}
+		};
 
+		// a map allows us to easily track how many houses have been visited
+		auto houses = std::unordered_map<Position, int>{};
+
+		// Santa always starts at pos(0,0)
 		auto santapos = Position{};
-		auto robopos = santapos;
+		auto robopos  = santapos;
 
-		// Santa & Robo start at pos(0,0)
-		++houses[santapos];
-		++houses[robopos];
+		using iterator = std::istreambuf_iterator<char>;
 
-		char santadir;
-		char robodir;
+		const auto begin = iterator{file};
+		const auto end   = iterator{};
 
-		while(file >> santadir >> robodir) {
-			move(santapos, santadir, houses);
-			move(robopos, robodir, houses);
+		for(const auto c : Range{begin, end}) {
+			++houses[santapos];
+			// simple trick to read input into two objects
+			std::swap(santapos, robopos);
+			santapos += directions.at(c);
 		}
 
 		std::cout << houses.size() << std::endl;
