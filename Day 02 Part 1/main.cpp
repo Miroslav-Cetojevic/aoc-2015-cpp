@@ -1,35 +1,52 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <numeric>
 #include <string>
+#include <vector>
+
+using uint64 = std::uint64_t;
 
 struct Dimensions {
-	std::size_t length, width, height;
+	uint64 length, width, height;
 };
 
 auto& operator>>(std::istream& in, Dimensions& D) {
-	return in >> D.length >> D.width >> D.height;
+	char c; // throwaway input
+	return in >> D.length >> c >> D.width >> c >> D.height;
+}
+
+auto get_area_list(const Dimensions& D) {
+	return std::vector{
+		(D.length * D.width),
+		(D.width * D.height),
+		(D.length * D.height)
+	};
 }
 
 int main() {
 
-	auto filename = std::string{"dimensions.txt"};
+	const auto filename = std::string{"dimensions.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto total_paper = 0U;
+		using iterator = std::istream_iterator<Dimensions>;
 
-		Dimensions D;
+		const auto begin = iterator{file};
+		const auto end   = iterator{};
+		const auto init  = uint64{};
 
-		while(file >> D) {
+		const auto accumulator = [] (auto acc, const auto& D) {
+			const auto list  = get_area_list(D);
+			const auto begin = list.begin();
+			const auto end   = list.end();
+			const auto init  = uint64{};
+			return acc += (2 * std::accumulate(begin, end, init) + *std::min_element(begin, end));
+		};
 
-			auto A = D.length * D.width;
-			auto B = D.width * D.height;
-			auto C = D.length * D.height;
-
-			total_paper += (2 * (A + B + C)) + std::min({A, B, C});
-		}
+		const auto total_paper = std::accumulate(begin, end, init, accumulator);
 
 		std::cout << total_paper << std::endl;
 
