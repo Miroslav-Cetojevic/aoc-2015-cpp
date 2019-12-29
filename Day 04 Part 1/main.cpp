@@ -33,7 +33,7 @@ auto get_value() {
 		out << (key + std::to_string(i));
 		out.close();
 
-		// finishes retrieve the hash in hexadecimal form as a string
+		// retrieve the hash in hexadecimal form as a string
 		const auto value = Poco::DigestEngine::digestToHex(md5.digest());
 
 		const auto has_prefix = (value.compare(0, prefix.size(), prefix) == 0);
