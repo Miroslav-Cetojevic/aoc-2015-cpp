@@ -40,7 +40,7 @@ auto get_value() {
 		const auto& hash = md5.digest();
 
 		// each element in hash is one-byte-sized (char) and represents two hexadecimal characters -
-		// in other words, an all-zero hash[0-2] (3 elements) is equal to "00000"
+		// in other words, an all-zero hash[0-2] (3 elements) is equal to "000000"
 		const auto has_prefix = std::all_of(prefix.begin(), prefix.end(), [&hash] (auto i) {
 			return (hash[i] == 0);
 		});
