@@ -1,16 +1,14 @@
 /*
  * NOTE:
  *
- * This code uses Boost and Poco C++
+ * Linker flags required for Poco C++:
  *
- * I'm using the following flags:
- * Linker: -lPocoFoundation
+ * -lPocoFoundation
  *
  */
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include <string>
 
 #include <boost/range/irange.hpp>
 
@@ -19,8 +17,7 @@
 #include <Poco/MD5Engine.h>
 
 auto get_value() {
-	const auto key = std::string{"ckczppom"};
-	const auto prefix = std::string{"00000"};
+	const auto key = "ckczppom";
 
 	auto md5 = Poco::MD5Engine{};
 	auto out = Poco::DigestOutputStream{md5};
@@ -29,14 +26,17 @@ auto get_value() {
 
 	auto result = std::find_if(range.begin(), range.end(), [&] (auto i) {
 
-		// computes the digest of (key + i) to be retrieved by the engine later
-		out << (key + std::to_string(i));
+		// computes the digest of (key + i)
+		out << key << i;
 		out.close();
 
-		// retrieve the hash in hexadecimal form as a string
-		const auto value = Poco::DigestEngine::digestToHex(md5.digest());
+		const auto& hash = md5.digest();
 
-		const auto has_prefix = (value.compare(0, prefix.size(), prefix) == 0);
+		// each element in hash is one-byte-sized (char) and represents two hexadecimal characters -
+		// in other words, the first two elements need to be equal to 0, giving us the first four
+		// zero-chars and the third element must be no higher than 0xf ("0f"), so we can get the fifth
+		// zero-char.
+		const auto has_prefix = (hash[0] == 0) && (hash[1] == 0) && (hash[2] <= 0xf);
 
 		return has_prefix;
 	});
