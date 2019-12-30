@@ -1,73 +1,73 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <numeric>
 #include <string>
+#include <string_view>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/irange.hpp>
 
-template<typename T>
-struct Range {
-	boost::counting_iterator<T, boost::use_default, T> begin, end;
-	Range(T b, T e): begin(b), end(e) {}
-};
+auto has_repeat_pairs(const std::string_view& str) {
 
-auto has_double_letter_pairs(const std::string& string) {
+	const auto range = boost::irange(str.size() - 3);
 
-	static constexpr decltype(string.size()) diff = 1;
+	const auto result = std::any_of(range.begin(), range.end(), [&, diff = 2] (auto i) {
 
-	auto range = Range{diff, string.size()}; // start search at index 1
+		const auto first_pair  = str.substr(i, diff);
+		const auto second_pair = str.find(first_pair, (i + diff));
 
-	auto has_double_pairs = std::any_of(range.begin, range.end, [&string] (auto i) {
-
-		auto first_pair = string.substr((i-diff), 2);
-		auto second_pair = string.find(first_pair, (i+diff));
-
-		auto has_both_pairs = (second_pair != string.npos);
+		const auto has_both_pairs = (second_pair != str.npos);
 
 		return has_both_pairs;
 	});
 
-	return has_double_pairs;
+	return result;
 }
 
-auto has_letter_sandwich(const std::string& string) {
+auto has_letter_sandwich(const std::string_view& str) {
 
-	static constexpr decltype(string.size()) diff = 2;
+	const auto size = str.size();
 
-	auto range = Range{diff, string.size()}; // start search at index 2
+	const decltype(size) diff = 2; // start search at index 2
 
-	auto has_sandwich = std::any_of(range.begin, range.end, [&string] (auto i) {
-		return (string[i] == string[i-diff]);
+	const auto range = boost::irange(diff, size);
+
+	const auto result = std::any_of(range.begin(), range.end(), [&] (auto i) {
+		return (str[i] == str[i-diff]);
 	});
 
-	return has_sandwich;
+	return result;
 }
 
-auto has_nice_string(const std::string& string) {
+auto is_nice_string(const std::string_view& str) {
 
-	return has_double_letter_pairs(string)
-		   && has_letter_sandwich(string);
+	return has_repeat_pairs(str)
+		   && has_letter_sandwich(str);
+}
+
+auto count_nice_strings(std::fstream& file) {
+
+	using iterator = std::istream_iterator<std::string>;
+
+	const auto begin = iterator{file};
+	const auto end   = iterator{};
+
+	const auto result = std::accumulate(begin, end, 0, [] (auto acc, const auto& line) {
+		return (acc + is_nice_string(line));
+	});
+
+	return result;
 }
 
 int main() {
 
-	auto filename = std::string{"strings.txt"};
+	const auto filename = std::string{"strings.txt"};
 	auto file = std::fstream{filename};
 
 	if(file.is_open()) {
 
-		auto count = 0;
-
-		std::string line;
-
-		while(std::getline(file, line)) {
-
-			if(has_nice_string(line)) {
-				++count;
-			}
-		}
-
-		std::cout << count << std::endl;
+		std::cout << count_nice_strings(file) << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
