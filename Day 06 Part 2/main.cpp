@@ -1,6 +1,7 @@
-#include <bitset>
+#include <array>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 
@@ -30,12 +31,12 @@ int main() {
 		constexpr auto gridlen = 1000U;
 		constexpr auto numlights = (gridlen * gridlen);
 
-		using Grid = std::bitset<numlights>;
+		using Grid = std::array<unsigned, numlights>;
 		auto grid = Grid{};
 
-		auto on = [] (auto& grid, auto pos) { grid.set(pos); };
-		auto off = [] (auto& grid, auto pos) { grid.reset(pos); };
-		auto toggle = [] (auto& grid, auto pos) { grid.flip(pos); };
+		auto on = [] (auto& grid, auto pos) { ++grid[pos]; };
+		auto off = [] (auto& grid, auto pos) { if(grid[pos] > 0) { --grid[pos]; } };
+		auto toggle = [] (auto& grid, auto pos) { grid[pos] += 2; };
 
 		using cmd = void (*) (Grid&, unsigned);
 		auto cmd_map = std::unordered_map<std::string, cmd>{
@@ -60,7 +61,9 @@ int main() {
 			}
 		}
 
-		std::cout << grid.count() << std::endl;
+		auto sum = std::accumulate(grid.begin(), grid.end(), 0U);
+
+		std::cout << sum << std::endl;
 
 	} else {
 		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
