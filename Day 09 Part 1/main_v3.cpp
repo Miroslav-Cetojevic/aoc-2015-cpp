@@ -23,11 +23,6 @@ using Distance = uintmax;
 constexpr auto NUM_LOCATIONS = 8;
 using Visits = std::bitset<NUM_LOCATIONS>;
 
-struct Path {
-	LocationID target;
-	Distance distance;
-};
-
 /*
  * Diagonal matrix
  *
