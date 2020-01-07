@@ -4,6 +4,7 @@
 #include <charconv>
 #include <cmath>
 #include <iostream>
+#include <numeric>
 #include <queue>
 #include <string_view>
 #include <unordered_map>
@@ -61,13 +62,13 @@ auto split_input(std::string_view input) {
 
 auto parse_input(std::string_view input) {
 
-  auto paths = AdjacencyMatrix{};
-
-  const auto to_int = [] (std::string_view s) {
+  const auto to_int = [] (std::string_view input) {
     uintmax value;
-    std::from_chars(s.begin(), s.end(), value);
+    std::from_chars(input.begin(), input.end(), value);
     return value;
   };
+
+  auto paths = AdjacencyMatrix{};
 
   auto& matrix = paths.matrix;
 
@@ -87,7 +88,7 @@ auto parse_input(std::string_view input) {
    * (2,0), (2,1)
    * (3,0), (3,1), (3,2)
    *
-   * But the actual ordering is:
+   * The actual ordering, as seen by the vector, is:
    *
    * (1,0), (2,0), (2,1), (3,0), (3,1), (3,2)
    *
@@ -124,20 +125,20 @@ struct State {
    *
    * E.g. A->B->C is equivalent to C->B->A.
    */
-	State(uintmax f, uintmax l, Visits v):
+	State(uintmax f, uintmax l, Visits v) :
 		first(std::min(f, l)),
 		last(std::max(f, l)),
 		visits(v) {};
 
 	// this will be called by the comparator of the priority queue in the A* search algorithm
-	auto operator<(State other) const {
+	auto operator<(const State& other) const {
 		const auto lhs = visits.to_ulong();
 		const auto rhs = other.visits.to_ulong();
 		return std::tie(first, last, lhs) < std::tie(other.first, other.last, rhs);
 	}
 
 	// this is required so we can use State as a key in an unordered map
-	auto operator==(State other) const {
+	auto operator==(const State& other) const {
 	  return first == other.first
 	         and last == other.last
 	         and visits == other.visits;
@@ -161,7 +162,7 @@ namespace std {
  * Score represents the total distance between the end points of any path.
  */
 template<typename Score, typename State, typename Heuristic, typename Goal, typename Next>
-auto a_star(State start, Heuristic&& heuristic, Goal&& is_goal, Next&& for_each_neighbor) {
+auto a_star(const State& start, Heuristic&& heuristic, Goal&& is_goal, Next&& for_each_neighbor) {
 
   auto result = std::pair{start, Score{}};
 
@@ -226,28 +227,93 @@ auto a_star(State start, Heuristic&& heuristic, Goal&& is_goal, Next&& for_each_
 	return result;
 }
 
+/*
+ * Adapted from https://stackoverflow.com/a/33181173
+ *
+ * MaxHeap tracks the minimum k values.
+ *
+ * If the internal storage space is full, it will do a heap
+ * sort which puts the maximum element in the heap at the top.
+ *
+ * A new value will only be inserted if it's smaller than the
+ * top element. On insertion, the top element will be popped
+ * off the heap, the new element inserted, and the next max
+ * element put at the top.
+ *
+ */
+template<typename N = uintmax>
+class MaxHeap {
+  private:
+    N k;
+  public:
+    std::vector<N> heap;
+
+    MaxHeap(N n) : k(n) {
+        heap.reserve(k);
+    }
+
+    void insert(N value) {
+      const auto begin = heap.begin();
+      const auto end   = heap.end();
+
+      if(heap.size() < k) {
+
+        heap.push_back(value);
+
+        if (heap.size() == k) {
+          std::make_heap(begin, end);
+        }
+
+      } else if(value < heap.front()) {
+        // this is the equivalent of a heap_swift_down
+        std::pop_heap(begin, end);
+        heap.back() = value;
+        std::push_heap(begin, end);
+      }
+    }
+};
+
 auto solution(std::string_view input) {
 
 	const auto paths = parse_input(input);
 
   /*
-   * A good heuristic will never overestimate the cost the next step should take
-   * and reduces the search space.
-   *
-   * Normally, it would perform the lookup part of for_each_neighbor() and find the
-   * minimum value of the available costs (distances, in this case).
-   *
-   * For this particular problem, the search space is small enough that a heuristic
-   * of zero makes the search as fast as possible. The cost of any lookup operation
-   * will outweigh any reduction of search space, therefore making the search slower.
+   * Estimates the lowest cost from the current location to the goal.
    *
    * Note: A* with a heuristic of zero is equivalent to Dijkstra's search.
    */
-  auto heuristic = [] (State) {
-    return 0;
+  const auto heuristic = [&] (const auto& state) {
+    auto result = Distance{};
+
+    const auto visits = state.visits;
+    const auto num_visits  = visits.count();
+    const auto num_locations = paths.num_locations;
+
+    if(num_visits < num_locations) {
+      auto mins = MaxHeap{num_locations - num_visits - 1};
+
+      // every state has visited the 0th location, because they have to start somewhere
+      // i represents the first endpoint of a path
+      for(const auto first : boost::irange({1}, num_locations)) {
+
+        if(not visits.test(first)) {
+
+          // j represents the other endpoint of a path
+          for(const auto last : boost::irange(first)) {
+
+            if(not visits.test(last)) {
+              mins.insert(paths.lookup(first, last));
+            }
+          }
+        }
+      }
+      const auto& heap = mins.heap;
+      result = std::accumulate(heap.begin(), heap.end(), Distance{});
+    }
+    return result;
   };
 
-	const auto is_goal = [&paths] (State state) {
+	const auto is_goal = [&paths] (const auto& state) {
 		return (state.visits.count() == paths.num_locations);
 	};
 
@@ -264,7 +330,7 @@ auto solution(std::string_view input) {
    * which will be used to repeat the process, but with different locations, until no subpaths
    * remain.
    */
-	const auto for_each_neighbor = [&paths] (State state, auto&& callback) {
+	const auto for_each_neighbor = [&paths] (const auto& state, auto&& callback) {
 
     for(const auto id : boost::irange(paths.num_locations)) {
 
@@ -290,6 +356,10 @@ auto solution(std::string_view input) {
     }
 	};
 
+	/*
+	 * since a state needs to start somewhere, we set the first bit
+	 * of the visited locations to 1
+	 */
 	const auto begin_state = State{0, 0, 1};
 
 	return a_star<uintmax>(begin_state, heuristic, is_goal, for_each_neighbor).second;
