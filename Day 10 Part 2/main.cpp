@@ -1,41 +1,41 @@
 #include <iostream>
-#include <sstream>
 #include <string>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/irange.hpp>
 
-template<typename T>
-struct Range {
-	boost::counting_iterator<T, boost::use_default, T> begin_, end_;
-	Range(T b, T e): begin_(b), end_(e) {}
-    auto begin() const { return begin_; }
-    auto end() const { return end_; }
-};
+using uintmax = std::uintmax_t;
+
+auto solution(std::string seq, uintmax n) {
+
+  const auto size = [&seq] {
+    return seq.size();
+  };
+
+  for(const auto e : boost::irange(n)) {
+
+    auto tmp = std::string{};
+
+    for(auto i = decltype(e){}, pos = i; i < size(); i = pos) {
+
+      pos = seq.find_first_not_of(seq[i], i + 1);
+
+      if (pos == seq.npos) {
+        pos = size();
+      }
+
+      tmp.push_back('0' + pos - i);
+      tmp.push_back(seq[i]);
+    }
+
+    seq = tmp;
+  }
+
+  return size();
+}
 
 int main() {
 
-    auto seq = std::string{"1321131112"};
-
-    for(auto e : Range<unsigned>{0, 50}) {
-
-        auto tmp = std::stringstream{};
-
-        for(auto i = 0UL, pos = (i + 1); i < seq.length(); i = pos, pos = (i + 1)) {
-
-            pos = seq.find_first_not_of(seq[i], pos);
-
-            if (pos == seq.npos) {
-                pos = seq.length();
-            }
-
-            tmp << (pos - i) << seq[i];
-
-        }
-
-        seq = tmp.str();
-    }
-
-    std::cout << seq.length() << std::endl;
+    std::cout << solution("1321131112", 50) << std::endl;
 
     return 0;
 }
