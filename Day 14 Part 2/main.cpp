@@ -1,114 +1,98 @@
 #include <algorithm>
-#include <fstream>
 #include <iostream>
-#include <numeric>
+#include <iterator>
+#include <sstream>
 #include <string>
 #include <vector>
 
-#include <boost/iterator/counting_iterator.hpp>
+#include <boost/range/irange.hpp>
 
-template<typename T>
-class Range {
-	private:
-		boost::counting_iterator<T, boost::use_default, T> begin_, end_;
-	public:
-		Range(T b, T e): begin_(b), end_(e) {}
-		auto begin() const { return begin_; }
-		auto end() const { return end_; }
-};
+#include "input.hpp"
+
+using uintmax = std::uintmax_t;
 
 struct Reindeer {
-	std::string name;
-	unsigned speed;
-	unsigned runtime;
-	unsigned resttime;
-	unsigned total_distance;
-	unsigned score;
+  uintmax speed,
+          runtime,
+          resttime,
+          total_distance = 0,
+          score = 0;
 };
 
 auto& operator>>(std::istream& in, Reindeer& r) {
-	in >> r.name >> r.speed >> r.runtime >> r.resttime;
-	r.total_distance = r.score = 0;
-	return in;
+  std::string s; // throwaway input
+  return in >> s >> s >> s
+            >> r.speed >> s >> s
+            >> r.runtime >> s >> s >> s >> s >> s >> s
+            >> r.resttime >> s;
 }
 
-auto operator>(const Reindeer& lhs, const Reindeer& rhs) {
-	return (lhs.total_distance > rhs.total_distance);
+using Reindeers = std::vector<Reindeer>;
+
+auto parse(const std::string& input) {
+  auto stream = std::stringstream{input};
+
+  using iterator = std::istream_iterator<Reindeer>;
+
+  const auto stream_begin = iterator{stream};
+  const auto stream_end   = iterator{};
+
+  return Reindeers{stream_begin, stream_end};
 }
 
-template<typename R, typename N>
-auto calculate_scores(R& reindeers, N seconds) {
+auto calculate_scores(Reindeers& reindeers, uintmax seconds) {
 
-	auto timespan = Range<unsigned>{1, (seconds + 1)};
+  const auto cmp_distance = [] (const auto& a, const auto& b) {
+    return a.total_distance < b.total_distance;
+  };
 
-	for(const auto second : timespan) {
+  const auto timespan = boost::irange({1}, (seconds + 1));
 
-		for(auto& reindeer : reindeers) {
+  for(const auto second : timespan) {
 
-			const auto runtime = reindeer.runtime;
-			const auto cycle = (runtime + reindeer.resttime);
-			const auto time_left = (second % cycle);
+    for(auto& reindeer : reindeers) {
 
-			// check if reindeer is running right this second
-			const auto has_time_left = (time_left > 0) && (time_left <= runtime);
+      const auto runtime = reindeer.runtime;
+      const auto cycle = (runtime + reindeer.resttime);
+      const auto time_left = (second % cycle);
 
-			if(has_time_left) {
-				reindeer.total_distance += reindeer.speed;
-			}
-		}
+      // check if reindeer is running right this second
+      const auto has_time_left = (time_left > 0) && (time_left <= runtime);
 
-		// update the ranking in total distance
-		std::sort(reindeers.begin(), reindeers.end(), std::greater<Reindeer>{});
+      if(has_time_left) {
+        reindeer.total_distance += reindeer.speed;
+      }
+    }
 
-		// one point for each leader
-		for(auto& reindeer : reindeers) {
-			if(reindeer.total_distance == reindeers.front().total_distance) {
-				++(reindeer.score);
-			}
-		}
-	}
+    const auto leading_distance = std::max_element(reindeers.begin(), reindeers.end(), cmp_distance)->total_distance;
+
+    // one point for each leader
+    for(auto& reindeer : reindeers) {
+      reindeer.score += (reindeer.total_distance == leading_distance);
+    }
+  }
 }
 
-template<typename R>
-auto get_max_score(const R& reindeers) {
+auto max_score(const Reindeers& reindeers) {
 
-	const auto begin = reindeers.begin();
-	const auto end   = reindeers.end();
-	const auto init  = unsigned{};
-	const auto max   = [] (auto current_max, auto& reindeer) {
-		return std::max(current_max, reindeer.score);
-	};
+  const auto cmp_score  = [] (const auto& a, const auto& b) {
+    return a.score < b.score;
+  };
 
-	// std::accumulate can be used to compute the minmax or a sequence
-	return std::accumulate(begin, end, init, max);
+  return std::max_element(reindeers.begin(), reindeers.end(), cmp_score)->score;
+}
+
+auto solution(const std::string& input, uintmax seconds) {
+
+  auto reindeers = parse(input);
+
+  calculate_scores(reindeers, seconds);
+
+  return max_score(reindeers);
 }
 
 int main() {
 
-	const auto filename = std::string{"reindeers.txt"};
-	auto file = std::fstream{filename};
+  std::cout << solution(puzzle_input, 2503) << std::endl;
 
-	if(file.is_open()) {
-
-		auto reindeers = std::vector<Reindeer>{};
-
-		unsigned seconds;
-
-		file >> seconds;
-
-		Reindeer entry;
-
-		while(file >> entry) {
-			reindeers.push_back(entry);
-		}
-
-		calculate_scores(reindeers, seconds);
-
-		std::cout << get_max_score(reindeers) << std::endl;
-
-	} else {
-		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
-	}
-
-	return 0;
 }
