@@ -12,17 +12,14 @@
 #include <iterator>
 #include <limits>
 
-#include <boost/range/irange.hpp>
-
 #include <openssl/md5.h>
 
-auto get_value() {
+#include <boost/range/irange.hpp>
 
-	// openssl requires unsigned char for its interfaces
-	using uchar = unsigned char;
+// openssl requires unsigned char for its interfaces
+using uchar = unsigned char;
 
-	const uchar key[] = "ckczppom";
-	const auto keylen = (sizeof(key) - 1);
+auto solution(const uchar key[], std::size_t keylen) {
 
 	auto hash = std::array<uchar, MD5_DIGEST_LENGTH>{};
 
@@ -37,22 +34,22 @@ auto get_value() {
 	// this is where the suffixes to the key will be stored -
 	// size of array is equal to number of digits of maximum
 	// value of an unsigned int
-	auto output_stream = std::array<char, uint32_limits::digits>{};
+	auto outstream = std::array<char, uint32_limits::digits>{};
 
 	const auto begin = uint32{117946 + 1}; // avoid repeating computations from Part 1
 	const auto end   = uint32_limits::max();
 
 	const auto range = boost::irange(begin, end);
 
-	auto result = std::find_if(range.begin(), range.end(), [&] (auto i) {
+	const auto result = std::find_if(range.begin(), range.end(), [&] (auto i) {
 
-		const auto begin = output_stream.begin();
-		const auto end   = output_stream.end();
+		const auto begin = outstream.begin();
+		const auto end   = outstream.end();
 
 		const auto ptr = std::to_chars(begin, end, i).ptr;
 
-		const auto outlen = std::distance(begin, ptr);
 		const auto data = reinterpret_cast<uchar*>(begin);
+		const auto outlen = std::distance(begin, ptr);
 
 		auto md5_copy = md5;
 
@@ -75,7 +72,7 @@ auto get_value() {
 
 int main() {
 
-	std::cout << get_value() << std::endl;
+  const uchar input[] = "ckczppom";
+	std::cout << solution(input, (sizeof(input) - 1)) << std::endl;
 
-	return 0;
 }
