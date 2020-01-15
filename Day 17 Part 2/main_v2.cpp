@@ -47,13 +47,22 @@ auto combinations(const Containers& containers) {
 
   auto kitchen = std::array<std::array<type, (NUM_CONTAINERS + 1)>, (TARGET + 1)>{};
 
-  // dynamic programming - we keep track of how many ways a certain sum can be made with the first n elements
+  kitchen.front().front() = 1;
+
+  /*
+   * Dynamic Programming - we keep track of how many ways a certain sum can be
+   * made with the first n elements.
+   *
+   * Each row (v) in the 2d-array represents a volume, and each column (n)
+   * represents how many of the nth containers can be used to reach the volume
+   * of the current row.
+   */
   kitchen.front().front() = 1;
 
   for(const auto& c : containers) {
     // v = volume
     for(auto v = TARGET - c; v >= 0; --v) {
-      // n = number of containers
+      // n = container id
       for(auto n = NUM_CONTAINERS; n > 0; --n) {
 
         kitchen[v + c][n] += kitchen[v][n - 1];
@@ -64,6 +73,11 @@ auto combinations(const Containers& containers) {
 
   const auto& fridge = kitchen[TARGET];
 
+  /*
+   * The first column greater than zero will be the minimum number of containers
+   * needed to reach the target volume, and its value is the number of combinations
+   * possible to reach that volume.
+   */
   return *std::find_if(fridge.begin(), fridge.end(), [] (const auto v) {
     return (v > 0);
   });
