@@ -32,13 +32,19 @@ constexpr auto parse_stats(std::string_view input) {
   return stats;
 }
 
-constexpr auto PARSE_STATS = parse_stats(puzzle_input);
+constexpr auto DEFAULT_INPUT = puzzle_input;
+constexpr auto DEFAULT_STEPS = 100;
+constexpr auto PARSE_STATS = parse_stats(DEFAULT_INPUT);
 
-constexpr auto NUM_COLS = PARSE_STATS.num_cols;
-constexpr auto NUM_ROWS = PARSE_STATS.num_rows;
+/*
+ * This will create a "ring" buffer around the actual grid, allowing us to
+ * bypass the need to treat first/last rows/columns and all four corners of the
+ * actual grid as special cases.
+ */
+constexpr auto GRIDLEN = PARSE_STATS.num_cols + 2;
+constexpr auto GRIDWIDTH = PARSE_STATS.num_rows + 2;
 
-constexpr auto GRIDLEN = NUM_COLS + 2;
-constexpr auto GRIDSIZE = (GRIDLEN * GRIDLEN);
+constexpr auto GRIDSIZE = (GRIDLEN * GRIDWIDTH);
 
 using Grid = std::array<char, GRIDSIZE>;
 
@@ -50,9 +56,9 @@ auto parse(std::string_view input) {
 
   auto grid = Grid{};
 
-  for(const auto row : boost::irange(1, NUM_ROWS+1)) {
+  for(const auto row : boost::irange(1, GRIDWIDTH-1)) {
 
-    for(const auto col : boost::irange(1, NUM_COLS+1)) {
+    for(const auto col : boost::irange(1, GRIDLEN-1)) {
 
       if(input.front() == '#') {
         grid[my_index(row, col)] = 1;
@@ -69,44 +75,41 @@ auto parse(std::string_view input) {
 
 auto num_lights_on(Grid grid, const unsigned steps) {
 
-  auto tmp_grid = grid;
-
-  constexpr auto limit = (GRIDLEN - 1);
+  /*
+   * Each cell in the sums grid represents the sum of turned-on lights from
+   * grid[i-1] to grid[i+1]. The sum of three of these cells minus the current
+   * cell represents the sum of all turned-on lights in the neighborhood.
+   *
+   * Because we are only looking at the current cell in any iteration, we can
+   * overwrite the grid in-place.
+   */
+  auto sums = Grid{};
 
   for(const auto step : boost::irange(steps)) {
 
-    for(const auto row: boost::irange(1, limit)) {
+    for(const auto i : boost::irange(GRIDLEN, GRIDSIZE-GRIDLEN)) {
+      sums[i] = grid[i-1]
+              + grid[i]
+              + grid[i+1];
+    }
 
-      for(const auto col : boost::irange(1, limit)) {
+    for(const auto row: boost::irange(1, (GRIDWIDTH - 1))) {
 
-        const auto sum = grid[my_index(row-1,col-1)]
-                       + grid[my_index(row-1,col)]
-                       + grid[my_index(row-1,col+1)]
-                       + grid[my_index(row,col-1)]
-                       + grid[my_index(row,col+1)]
-                       + grid[my_index(row+1,col-1)]
-                       + grid[my_index(row+1,col)]
-                       + grid[my_index(row+1,col+1)];
+      for(const auto col : boost::irange(1, (GRIDLEN - 1))) {
 
         const auto pos = my_index(row, col);
 
-        const auto must_turn_off = [&] () {
-          return (grid[pos]) && (sum < 2 || sum > 3);
-        };
+        auto& cell = grid[pos];
 
-        const auto must_turn_on = [&] () {
-          return (not grid[pos]) && (sum == 3);
-        };
+        const auto sum = sums[pos]
+                       - cell
+                       + sums[pos+GRIDLEN]
+                       + sums[pos-GRIDLEN];
 
-        if(must_turn_off()) {
-          tmp_grid[pos] = 0;
-        } else if(must_turn_on()) {
-          tmp_grid[pos] = 1;
-        }
+        cell = (sum == 3) or (sum == 2 and cell == 1);
+
       }
     }
-
-    grid = tmp_grid;
   }
 
   return std::accumulate(grid.begin(), grid.end(), 0);
@@ -116,9 +119,11 @@ auto solution(std::string_view input, const unsigned steps) {
 
   const auto& grid = parse(input);
 
-  return num_lights_on(grid, steps);
+  const auto result = num_lights_on(grid, steps);
+
+  return result;
 }
 
 int main() {
-  std::cout << solution(puzzle_input, 100) << std::endl;
+  std::cout << solution(DEFAULT_INPUT, DEFAULT_STEPS) << std::endl;
 }
