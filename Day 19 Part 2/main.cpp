@@ -52,105 +52,109 @@
  * count all the molecules in the medicine and subtract the ones that serve as `(,)`
  * using the formula as described above.
  */
-#include <fstream>
 #include <iostream>
-#include <iterator>
-#include <string>
 #include <string_view>
 #include <unordered_set>
-#include <vector>
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/irange.hpp>
 
-struct MoleculesEntry {
-	std::string atom;
-	std::string molecule;
-};
+#include "input.hpp"
 
-auto& operator>>(std::istream& in, MoleculesEntry& entry) {
-	std::string arrow; // garbage value
-	return in >> entry.atom >> arrow >> entry.molecule;
+constexpr auto NEWLINE = '\n';
+
+constexpr auto parse_stats(std::string_view input) {
+
+  auto num_lines = 0;
+
+  for(auto c : input) {
+    num_lines += (c == NEWLINE);
+  }
+
+  return ++num_lines;
+}
+
+constexpr auto NUM_LINES = parse_stats(puzzle_input);
+
+using Molecules = std::unordered_set<std::string_view>;
+using Machine = std::pair<std::string_view, Molecules>;
+
+auto parse(std::string_view input) {
+
+  auto molecules = std::unordered_set<std::string_view>{};
+
+  constexpr auto SPACE = ' ';
+
+  for(const auto i : boost::irange(NUM_LINES-2)) {
+
+    const auto linepos = input.find(NEWLINE);
+
+    auto line = input.substr(0, linepos);
+
+    molecules.insert(line.substr(0, line.find(SPACE)));
+
+    auto output = line.substr((line.rfind(SPACE) + 1), line.npos);
+
+    auto outpos = decltype(output.size()){};
+
+    while(outpos != output.npos) {
+      const auto endpos = output.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ", (outpos + 1));
+      molecules.insert(output.substr(outpos, (endpos - outpos)));
+      outpos = endpos;
+    }
+
+    input.remove_prefix(linepos + 1);
+  }
+  // only one newline remains, remove it, and the input is now equal to the medicine
+  input.remove_prefix(1);
+
+  return Machine{input, molecules};
+}
+
+auto min_steps(Machine machine) {
+
+  auto& [medicine, molecules] = machine;
+
+  int sum_molecules = 0,
+      sum_rn_ar = 0,
+      sum_y = 0;
+
+  const auto medsize = medicine.size();
+
+  const auto reversed_range = boost::irange(medsize) | boost::adaptors::reversed;
+
+  // going backwards through the medicine allows us to count the molecules in a single pass
+  for(const auto i : reversed_range) {
+
+    const auto molecule = molecules.find(medicine.substr(i, (medsize - i)));
+
+    if(molecule != molecules.end()) {
+
+      ++sum_molecules;
+
+      const auto value = *molecule;
+
+      sum_rn_ar += (value == "Rn" || value == "Ar");
+      sum_y += (value == "Y");
+
+      medicine.remove_suffix(molecule->size());
+    }
+  }
+
+  const auto result = (sum_molecules - sum_rn_ar - (2 * sum_y) - 1);
+
+  return result;
+}
+
+auto solution(std::string_view input) {
+
+  auto machine = parse(input);
+
+  return min_steps(machine);
 }
 
 int main() {
 
-	const auto filename = std::string{"molecules.txt"};
-	auto file = std::fstream{filename};
+	std::cout << solution(puzzle_input) << std::endl;
 
-	if(file.is_open()) {
-
-		auto medicine = *(std::istream_iterator<std::string>{file});
-
-		const auto Rn = std::string{"Rn"};
-		const auto Y = std::string{"Y"};
-		const auto Ar = std::string{"Ar"};
-
-		auto molecules_set = std::unordered_set<std::string>{Rn, Y, Ar};
-		auto output_molecules = std::vector<std::string>{};
-
-		MoleculesEntry entry;
-
-		while(file >> entry) {
-			molecules_set.insert(entry.atom);
-			output_molecules.push_back(entry.molecule);
-		}
-
-		// remove any registered molecules from the output
-		// so we can add the remaining molecules not yet in the set
-		for(auto& output : output_molecules) {
-
-			for(const auto& molecule : molecules_set) {
-
-				for(auto pos = output.rfind(molecule); pos != output.npos; pos = output.rfind(molecule)) {
-					output.erase(pos, molecule.size());
-				}
-			}
-		}
-
-		// register the last remaining molecules
-		molecules_set.insert(output_molecules.begin(), output_molecules.end());
-
-		// we have all the strings we need, now we can enjoy the view(s)
-		auto view_medicine = std::string_view{medicine};
-		const auto view_set = std::unordered_set<std::string_view>{molecules_set.begin(), molecules_set.end()};
-
-		auto sum_molecules = std::int64_t{};
-		auto sum_rn_ar = std::int64_t{};
-		auto sum_y = std::int64_t{};
-
-		const auto medsize = view_medicine.size();
-
-		const auto reversed_range = boost::irange(medsize) | boost::adaptors::reversed;
-
-		// going backwards through the medicine allows us to count the molecules in a single pass
-		for(const auto i : reversed_range) {
-
-			const auto molecule = view_set.find(view_medicine.substr(i, (medsize - i)));
-
-			const auto found_molecule = (molecule != view_set.end());
-
-			if(found_molecule) {
-
-				if(*molecule == Rn || *molecule == Ar) {
-					++sum_rn_ar;
-				} else if(*molecule == Y) {
-					++sum_y;
-				}
-
-				++sum_molecules;
-
-				view_medicine.remove_suffix(molecule->size());
-			}
-		}
-
-		const auto result = (sum_molecules - sum_rn_ar - (2 * sum_y) - 1);
-
-		std::cout << result << std::endl;
-
-	} else {
-		std::cerr << "Error! Could not open \"" << filename << "\"!" << std::endl;
-	}
-
-	return 0;
 }
