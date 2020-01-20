@@ -81,19 +81,17 @@ using Medicine = std::array<std::string_view, MED_SIZE>;
  * as a sequence of separate molecules, it becomes easier to use the count formula
  * described above later on.
  */
+#include <boost/range/irange.hpp>
 auto parse_medicine(std::string_view input) {
 
   auto medicine = Medicine{};
-  auto index = 0;
 
   input.remove_prefix(input.rfind(NEWLINE) + 1);
 
-  auto pos = decltype(input.size()){};
-
-  while(pos != input.npos) {
-    const auto next = input.find_first_of(UPPERCASE_ALPHABET, (pos + 1));
-    medicine[index++] = input.substr(pos, (next - pos));
-    pos = next;
+  for(const auto i : boost::irange(MED_SIZE)) {
+    const auto pos = input.find_first_of(UPPERCASE_ALPHABET, 1);
+    medicine[i] = input.substr(0, pos);
+    input.remove_prefix(pos);
   }
 
   return medicine;
